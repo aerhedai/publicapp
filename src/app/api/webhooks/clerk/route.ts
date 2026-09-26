@@ -2,8 +2,9 @@ import { headers } from "next/headers";
 import { Webhook } from "svix";
 import type { WebhookEvent } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, uploads, generationJobs } from "@/db/schema";
+import { and, eq, isNotNull } from "drizzle-orm";
+import { deleteUserObjects } from "@/storage/r2";
 
 // Verifies the request actually came from Clerk before touching the
 // database - this endpoint is public (see src/proxy.ts's public-route
@@ -52,8 +53,29 @@ export async function POST(req: Request) {
       break;
     }
     case "user.deleted": {
-      if (event.data.id) {
-        await db.delete(users).where(eq(users.id, event.data.id));
+      const userId = event.data.id;
+      if (userId) {
+        // Collect every R2 key this user owns BEFORE the DB delete below -
+        // once the users row is gone, the cascade takes uploads/generationJobs
+        // with it and there'd be no record left of what to clean up in R2.
+        const [ownedUploads, ownedJobOutputs] = await Promise.all([
+          db.select({ key: uploads.storageKey }).from(uploads).where(eq(uploads.userId, userId)),
+          db
+            .select({ key: generationJobs.outputStorageKey })
+            .from(generationJobs)
+            .where(and(eq(generationJobs.userId, userId), isNotNull(generationJobs.outputStorageKey))),
+        ]);
+
+        const keys = [
+          ...ownedUploads.map((u) => u.key),
+          ...ownedJobOutputs.map((j) => j.key).filter((k): k is string => k !== null),
+        ];
+
+        if (keys.length > 0) {
+          await deleteUserObjects(userId, keys);
+        }
+
+        await db.delete(users).where(eq(users.id, userId));
       }
       break;
     }

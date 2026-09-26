@@ -5,6 +5,7 @@ import { uploads } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { createPresignedUpload, InvalidUploadError } from "@/storage/r2";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
+import { ensureUserRow } from "@/lib/ensure-user";
 
 // Client asks for a presigned URL, uploads directly to R2, then the app
 // records the resulting key - the server never proxies the file bytes
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
   }
 
   try {
+    await ensureUserRow(userId);
+
     const { key, uploadUrl } = await createPresignedUpload({
       userId,
       filename: body.filename,

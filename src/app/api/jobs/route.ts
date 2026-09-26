@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
+import { ensureUserRow } from "@/lib/ensure-user";
 
 // `input` is intentionally untyped/generic here (see schema.ts) - the
 // video-generation side of the app owns what shape it needs; this route
@@ -23,6 +24,8 @@ export async function POST(req: Request) {
   if (!body || typeof body.input !== "object" || body.input === null) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+
+  await ensureUserRow(userId);
 
   const [job] = await db
     .insert(generationJobs)

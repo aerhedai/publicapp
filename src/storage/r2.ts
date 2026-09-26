@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectsCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -109,5 +110,32 @@ export async function createPresignedDownload(key: string, expiresIn = 300) {
 export function assertOwnsKey(userId: string, key: string) {
   if (!key.startsWith(`users/${userId}/`)) {
     throw new Error("Key does not belong to this user");
+  }
+}
+
+/**
+ * Deletes a batch of R2 objects (max 1000 per call, per the S3 API - chunk
+ * if you ever need more). Every key is re-checked against `userId` here,
+ * not just at the call site, so a bug elsewhere can't turn into deleting
+ * someone else's files.
+ *
+ * Called from the Clerk `user.deleted` webhook before the DB cascade
+ * removes the `uploads`/`generation_jobs` rows that reference these keys -
+ * once those rows are gone there'd be no record of what to delete, and the
+ * files would be orphaned in the bucket indefinitely.
+ */
+export async function deleteUserObjects(userId: string, keys: string[]) {
+  const owned = keys.filter((key) => key.startsWith(`users/${userId}/`));
+  if (owned.length === 0) return;
+
+  const CHUNK_SIZE = 1000;
+  for (let i = 0; i < owned.length; i += CHUNK_SIZE) {
+    const chunk = owned.slice(i, i + CHUNK_SIZE);
+    await getClient().send(
+      new DeleteObjectsCommand({
+        Bucket: getBucket(),
+        Delete: { Objects: chunk.map((Key) => ({ Key })) },
+      })
+    );
   }
 }

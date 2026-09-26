@@ -1,0 +1,26 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+// Default-deny: everything is protected unless it matches one of these.
+// Add new public routes here explicitly - never widen this by accident.
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/shared/(.*)", // public shareable output pages - read-only, no auth required
+  "/api/webhooks/(.*)", // verified via signature inside the handler, not via session
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+});
+
+export const config = {
+  matcher: [
+    // Run on everything except static assets and Next internals.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Always run for API routes.
+    "/(api|trpc)(.*)",
+  ],
+};

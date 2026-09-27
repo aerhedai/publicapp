@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc, inArray } from "drizzle-orm";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 import { ensureUserRow } from "@/lib/ensure-user";
 import { checkContentPolicy } from "@/lib/content-policy";
+
+// A user's own in-flight statuses - not a mutable "balance" style flag,
+// just the set of rows that count against their concurrency cap.
+const IN_FLIGHT_STATUSES = ["queued", "warming", "processing"] as const;
+const MAX_CONCURRENT_JOBS_PER_USER = 1;
 
 // `input` is intentionally untyped/generic here (see schema.ts) - the
 // video-generation side of the app owns what shape it needs; this route
@@ -34,6 +39,22 @@ export async function POST(req: Request) {
   const policy = checkContentPolicy(body.input);
   if (!policy.allowed) {
     return NextResponse.json({ error: policy.reason }, { status: 400 });
+  }
+
+  // Distinct from the request-rate limit above - this counts the user's own
+  // not-yet-finished rows (a WHERE-clause filter, same ownership style as
+  // every other query here), not requests-per-minute. A different error
+  // code than the generic rate-limit 429 so the frontend can show a
+  // different message ("you already have a generation running" vs "slow down").
+  const inFlight = await db
+    .select({ id: generationJobs.id })
+    .from(generationJobs)
+    .where(and(eq(generationJobs.userId, userId), inArray(generationJobs.status, IN_FLIGHT_STATUSES)));
+  if (inFlight.length >= MAX_CONCURRENT_JOBS_PER_USER) {
+    return NextResponse.json(
+      { error: "concurrent_limit", message: "You already have a generation in progress" },
+      { status: 429 }
+    );
   }
 
   await ensureUserRow(userId);

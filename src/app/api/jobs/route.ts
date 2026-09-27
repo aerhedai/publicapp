@@ -24,12 +24,15 @@ export async function POST(req: Request) {
   if (!body || typeof body.input !== "object" || body.input === null) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+  if (body.type !== "image" && body.type !== "video") {
+    return NextResponse.json({ error: "type must be \"image\" or \"video\"" }, { status: 400 });
+  }
 
   await ensureUserRow(userId);
 
   const [job] = await db
     .insert(generationJobs)
-    .values({ userId, input: body.input })
+    .values({ userId, type: body.type, input: body.input })
     .returning();
 
   return NextResponse.json({ job });

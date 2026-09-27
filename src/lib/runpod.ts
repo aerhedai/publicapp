@@ -81,6 +81,18 @@ function buildWebhookUrl(jobId: string): string {
   const url = new URL("/api/webhooks/runpod", getAppBaseUrl());
   url.searchParams.set("jobId", jobId);
   url.searchParams.set("secret", getWebhookSecret());
+  // Preview (and Production, if Deployment Protection is ever turned on
+  // there) rejects any request without a valid session/bypass before it
+  // ever reaches our route - RunPod's outbound webhook call has no way to
+  // supply that, so without this it would 401 silently and every job would
+  // fall through to the stale-job sweep instead of resolving promptly.
+  // VERCEL_AUTOMATION_BYPASS_SECRET is auto-injected by Vercel itself once
+  // a project has an automation bypass secret configured - not something
+  // this app needs to generate or store.
+  if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+    url.searchParams.set("x-vercel-protection-bypass", process.env.VERCEL_AUTOMATION_BYPASS_SECRET);
+    url.searchParams.set("x-vercel-set-bypass-cookie", "false");
+  }
   return url.toString();
 }
 

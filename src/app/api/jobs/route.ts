@@ -5,6 +5,7 @@ import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 import { ensureUserRow } from "@/lib/ensure-user";
+import { checkContentPolicy } from "@/lib/content-policy";
 
 // `input` is intentionally untyped/generic here (see schema.ts) - the
 // video-generation side of the app owns what shape it needs; this route
@@ -26,6 +27,13 @@ export async function POST(req: Request) {
   }
   if (body.type !== "image" && body.type !== "video") {
     return NextResponse.json({ error: "type must be \"image\" or \"video\"" }, { status: 400 });
+  }
+
+  // Rejected here, before ensureUserRow/insert, so a policy-violating
+  // request never occupies a queued slot or risks being billed.
+  const policy = checkContentPolicy(body.input);
+  if (!policy.allowed) {
+    return NextResponse.json({ error: policy.reason }, { status: 400 });
   }
 
   await ensureUserRow(userId);

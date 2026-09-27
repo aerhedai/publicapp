@@ -14,7 +14,10 @@ const STATUS_CONFIG: Record<
 > = {
   queued: {
     label: "Queued",
-    className: "bg-muted text-muted-foreground",
+    // Not bg-muted/text-muted-foreground - those tokens aren't actually
+    // defined in globals.css (confirmed by reading it), so bg-muted
+    // silently renders as no background at all - an invisible pill.
+    className: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
     detail: "Waiting for a free GPU slot.",
   },
   warming: {

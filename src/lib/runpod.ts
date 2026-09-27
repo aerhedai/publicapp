@@ -123,13 +123,19 @@ export async function dispatchJob(params: {
   return { runpodJobId: data.id };
 }
 
-// Only used by the stale-job sweep, never the happy path (that's the
-// webhook's job).
-export async function getJobStatus(runpodJobId: string): Promise<{
+// Matches both the /status/{id} response and the webhook POST body (RunPod
+// sends the same shape to both - confirmed live this session).
+export interface RunpodJobStatus {
   id: string;
   status: string;
+  executionTime?: number;
+  delayTime?: number;
   output?: { outputStorageKey?: string; error?: string; comfyExecMs?: number; seed?: number };
-}> {
+}
+
+// Only used by the stale-job sweep, never the happy path (that's the
+// webhook's job).
+export async function getJobStatus(runpodJobId: string): Promise<RunpodJobStatus> {
   const res = await fetch(`${getBaseUrl()}/status/${runpodJobId}`, {
     headers: { Authorization: `Bearer ${getApiKey()}` },
   });

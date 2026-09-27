@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/dispatch", "schedule": "* * * * *" },
+    { "path": "/api/cron/sweep-stale", "schedule": "*/5 * * * *" }
+  ]
+}

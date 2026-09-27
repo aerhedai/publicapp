@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/shared/(.*)", // public shareable output pages - read-only, no auth required
   "/api/webhooks/(.*)", // verified via signature inside the handler, not via session
+  "/api/cron/(.*)", // verified via CRON_SECRET inside the handler, not via session
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

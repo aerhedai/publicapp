@@ -99,3 +99,20 @@ export async function releaseCredits(params: {
     .set({ status: "failed", error: params.error, settleLedgerId: refundRow.id })
     .where(eq(generationJobs.id, params.jobId));
 }
+
+/**
+ * Refunds a reserve without ending the job - used by the dispatch cron when
+ * a *transient* RunPod error (network/5xx) sends a job back to "queued" for
+ * retry on the next tick, rather than failing it outright. Unlike
+ * releaseCredits, this never touches status/settleLedgerId - the job isn't
+ * at a terminal state, so the webhook/sweep idempotency guard must stay
+ * untouched for whenever it eventually does land.
+ */
+export async function refundReservedCredits(params: {
+  userId: string;
+  estimatedCredits: number;
+}): Promise<void> {
+  await db
+    .insert(creditLedger)
+    .values({ userId: params.userId, delta: params.estimatedCredits, reason: "generation_refund_retry" });
+}

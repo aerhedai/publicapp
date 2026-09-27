@@ -139,6 +139,13 @@ export async function getJobStatus(runpodJobId: string): Promise<RunpodJobStatus
   const res = await fetch(`${getBaseUrl()}/status/${runpodJobId}`, {
     headers: { Authorization: `Bearer ${getApiKey()}` },
   });
+  if (res.status === 404) {
+    // RunPod purges job status after a retention window (confirmed live -
+    // a job that genuinely COMPLETED hours earlier this session later
+    // 404'd here) - the sweep needs to distinguish "gone, unrecoverable"
+    // from a real error, not throw and leave the job stuck forever.
+    return { id: runpodJobId, status: "NOT_FOUND" };
+  }
   if (!res.ok) {
     throw new RunpodDispatchError(`Failed to get RunPod job status: ${res.status}`, res.status >= 500);
   }

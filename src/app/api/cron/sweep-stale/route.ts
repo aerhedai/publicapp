@@ -68,15 +68,28 @@ export async function GET(req: Request) {
 
     try {
       const status = await getJobStatus(job.runpodJobId);
+      const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
+
       if (status.status === "COMPLETED" || status.status === "FAILED") {
         await applyRunpodResult(job, status);
         results.push({ jobId: job.id, outcome: `resolved_${status.status.toLowerCase()}` });
         console.log(`[cron/sweep-stale] job ${job.id} resolved via sweep (lost webhook), runpod status=${status.status}`);
+      } else if (status.status === "NOT_FOUND") {
+        // RunPod has no record of this job at all (purged after its own
+        // retention window) - unrecoverable, nothing left to cancel.
+        await releaseCredits({
+          jobId: job.id,
+          userId: job.userId,
+          estimatedCredits: cost,
+          error: "runpod_job_not_found",
+        });
+        await releaseGlobalSlot();
+        results.push({ jobId: job.id, outcome: "runpod_job_not_found" });
+        console.error(`[cron/sweep-stale] job ${job.id} - RunPod has no record of runpodJobId=${job.runpodJobId}`);
       } else {
         // Still not terminal despite exceeding this type's own worst-case
         // runtime budget - genuinely stuck, not just a slow webhook.
         await cancelJob(job.runpodJobId);
-        const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
         await releaseCredits({
           jobId: job.id,
           userId: job.userId,

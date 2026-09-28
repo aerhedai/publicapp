@@ -10,7 +10,7 @@ import { Footer } from "@/components/landing/footer";
 export default async function Home() {
   const { userId } = await auth();
   if (userId) {
-    redirect("/dashboard");
+    redirect("/console");
   }
 
   return (

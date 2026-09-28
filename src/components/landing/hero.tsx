@@ -36,7 +36,7 @@ export function Hero() {
           generation - from a single line of description to a finished shot.
         </p>
         <Link
-          href="/sign-up"
+          href="/console"
           className="mt-8 rounded-full bg-foreground px-7 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
         >
           Start Creating

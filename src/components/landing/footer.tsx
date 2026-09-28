@@ -13,7 +13,7 @@ const COLUMNS = [
     heading: "Company",
     links: [
       { label: "Log in", href: "/sign-in" },
-      { label: "Dashboard", href: "/dashboard" },
+      { label: "Console", href: "/console" },
     ],
   },
   {

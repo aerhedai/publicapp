@@ -1,54 +1,16 @@
-// Static UI only - not wired to any backend. Mirrors the CreationBox's
-// visual language (src/components/console/create/creation-box.tsx)
-// without reusing it directly, since voice generation's inputs (a voice
-// picker, not an aspect-ratio/resolution grid) are genuinely different.
-const VOICES = ["Narrator (Calm)", "Narrator (Energetic)", "Conversational", "Announcer"];
+import { auth } from "@clerk/nextjs/server";
+import { VoiceToolClient } from "@/components/console/create/voice-tool-client";
 
-export default function VoiceToolPage() {
+// No "voice" job type exists in the schema yet (jobType is only
+// image|video) - there's no real history to show here, so this is an
+// honest empty array rather than a fabricated one.
+export default async function VoiceToolPage() {
+  const { userId } = await auth();
+  if (!userId) return null; // layout already redirects; belt and suspenders
+
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-8 py-14">
-      <h1 className="font-display text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-        Generate a voiceover
-      </h1>
-
-      <div className="rounded-3xl border border-border bg-card p-4">
-        <textarea
-          rows={4}
-          placeholder="Type the script you want narrated..."
-          className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-        />
-
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
-          >
-            {VOICES[0]}
-            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-              <path
-                d="M6 8l4 4 4-4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            disabled
-            title="Voice generation isn't wired up yet - coming soon"
-            className="cursor-not-allowed rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white opacity-50"
-          >
-            Generate
-          </button>
-        </div>
-      </div>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Voice generation isn&apos;t connected yet - coming soon.
-      </p>
+    <div className="flex h-full flex-col">
+      <VoiceToolClient jobs={[]} />
     </div>
   );
 }

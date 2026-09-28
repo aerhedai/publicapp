@@ -1,12 +1,23 @@
-import { CreationBox } from "@/components/console/create/creation-box";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db/client";
+import { generationJobs } from "@/db/schema";
+import { and, eq, desc } from "drizzle-orm";
+import { ImageToolClient } from "@/components/console/create/image-tool-client";
 
-export default function ImageToolPage() {
+export default async function ImageToolPage() {
+  const { userId } = await auth();
+  if (!userId) return null; // layout already redirects; belt and suspenders
+
+  const jobs = await db
+    .select({ id: generationJobs.id, status: generationJobs.status, createdAt: generationJobs.createdAt })
+    .from(generationJobs)
+    .where(and(eq(generationJobs.userId, userId), eq(generationJobs.type, "image")))
+    .orderBy(desc(generationJobs.createdAt))
+    .limit(30);
+
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-8 py-14">
-      <h1 className="font-display text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-        Generate an image
-      </h1>
-      <CreationBox initialMode="image" />
+    <div className="flex h-full flex-col">
+      <ImageToolClient jobs={jobs} />
     </div>
   );
 }

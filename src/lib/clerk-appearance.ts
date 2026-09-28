@@ -31,7 +31,16 @@ export const clerkAppearance = {
     fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
   },
   elements: {
-    card: "!bg-[#141414] !border !border-white/10 !shadow-none !rounded-2xl !p-6",
+    // rootBox/cardBox: confirmed live via getBoundingClientRect that Clerk
+    // renders these at a fixed intrinsic width (400px) regardless of the
+    // parent container's width - it doesn't stretch to fill, it just
+    // overflows past the right edge of whatever wraps it. That's the exact
+    // cause of the left/right margin looking uneven (the box wasn't
+    // actually centered, it was overflowing one side). !w-full forces it
+    // to respect the parent instead of its own default.
+    rootBox: "!w-full",
+    cardBox: "!w-full",
+    card: "!w-full !bg-[#141414] !border !border-white/10 !shadow-none !rounded-2xl !p-6",
     header: "!text-white",
     headerTitle: "!text-white text-xl font-semibold font-[family-name:var(--font-bricolage)]",
     headerSubtitle: "!text-zinc-400 text-sm",

@@ -58,12 +58,12 @@ export function Pricing() {
               key={tier.name}
               className={
                 tier.popular
-                  ? "relative rounded-2xl p-[1px] [background:linear-gradient(135deg,var(--accent-from),var(--accent-to))]"
+                  ? "relative rounded-3xl p-[1px] [background:linear-gradient(135deg,var(--accent-from),var(--accent-to))]"
                   : ""
               }
             >
               <div
-                className={`flex h-full flex-col rounded-2xl border p-6 ${
+                className={`flex h-full flex-col rounded-3xl border p-6 ${
                   tier.popular
                     ? "border-transparent bg-card"
                     : "border-border bg-card"
@@ -89,7 +89,7 @@ export function Pricing() {
                       <svg
                         viewBox="0 0 20 20"
                         fill="none"
-                        className="mt-0.5 h-4 w-4 shrink-0 text-foreground"
+                        className="mt-0.5 h-5 w-5 shrink-0 text-foreground"
                       >
                         <path
                           d="M16 6L8.5 14 4 9.5"

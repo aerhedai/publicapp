@@ -22,7 +22,7 @@ function AspectRatioGrid({
           key={opt.label}
           type="button"
           onClick={() => onChange(opt.label)}
-          className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-xs transition-colors ${
+          className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-xs transition-colors ${
             value === opt.label
               ? "border-white/30 bg-white/10 text-white"
               : "border-transparent text-zinc-400 hover:bg-white/5"
@@ -66,7 +66,7 @@ export function ImageSettingsPopover({
   onChange: (next: ImageSettings) => void;
 }) {
   return (
-    <div className="w-80 rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+    <div className="w-80 rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
       <h3 className="text-sm font-medium text-white">Image settings</h3>
       <div className="my-4 border-t border-white/10" />
 
@@ -123,7 +123,7 @@ export function VideoSettingsPopover({
   onChange: (next: VideoSettings) => void;
 }) {
   return (
-    <div className="w-80 rounded-2xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+    <div className="w-80 rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
       <h3 className="text-sm font-medium text-white">Video settings</h3>
       <div className="my-4 border-t border-white/10" />
 

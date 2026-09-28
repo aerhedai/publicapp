@@ -111,7 +111,7 @@ function NavLink({
       href={href}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
         collapsed ? "justify-center" : ""
       } ${
         active
@@ -119,7 +119,7 @@ function NavLink({
           : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
       }`}
     >
-      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0">
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0">
         {icon}
       </svg>
       {!collapsed && label}
@@ -151,9 +151,9 @@ function SidebarContent({
             type="button"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={onToggleCollapse}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
           >
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
               <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
               <path d="M9 4v16" stroke="currentColor" strokeWidth="1.5" />
             </svg>
@@ -182,11 +182,11 @@ function SidebarContent({
       {!collapsed && (
         <Link
           href="/console/account/pricing"
-          className="mb-3 flex items-center justify-between rounded-lg bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="mb-3 flex items-center justify-between rounded-xl bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <span className="flex items-center gap-1.5">
             Go Pro
-            <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <path
                 d="M4 10h12M11 5l5 5-5 5"
                 stroke="currentColor"
@@ -226,9 +226,9 @@ export function ConsoleShell({
           type="button"
           aria-label="Open menu"
           onClick={() => setMobileOpen(true)}
-          className="rounded-md p-2 text-foreground hover:bg-white/5"
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-foreground hover:bg-white/5"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
             <path
               d="M4 6h16M4 12h16M4 18h16"
               stroke="currentColor"
@@ -242,7 +242,7 @@ export function ConsoleShell({
       {/* Desktop sidebar - floating card, not docked flush to the viewport
           edges: margin on all sides + its own rounded border/shadow. */}
       <aside className="hidden shrink-0 p-3 lg:flex">
-        <div className="flex h-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex h-full overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
           <SidebarContent
             credits={credits}
             collapsed={collapsed}

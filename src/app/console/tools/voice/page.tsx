@@ -11,7 +11,7 @@ export default function VoiceToolPage() {
         Generate a voiceover
       </h1>
 
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-3xl border border-border bg-card p-4">
         <textarea
           rows={4}
           placeholder="Type the script you want narrated..."
@@ -24,7 +24,7 @@ export default function VoiceToolPage() {
             className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
           >
             {VOICES[0]}
-            <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <path
                 d="M6 8l4 4 4-4"
                 stroke="currentColor"

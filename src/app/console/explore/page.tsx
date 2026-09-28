@@ -28,7 +28,7 @@ export default async function ExplorePage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-3xl border border-border bg-card p-6">
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No jobs yet. This is where the video-generation flow will plug in.

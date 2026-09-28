@@ -109,17 +109,17 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center gap-3 rounded-lg border border-border px-3 py-3 transition-colors hover:bg-white/5 ${
+        className={`flex w-full items-center gap-3 rounded-xl border border-border px-3 py-3 transition-colors hover:bg-white/5 ${
           collapsed ? "justify-center" : ""
         }`}
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] text-xs font-medium text-white">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] text-xs font-medium text-white">
           {initial}
         </div>
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{name}</span>
-            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0 text-muted-foreground">
+            <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 shrink-0 text-muted-foreground">
               <path
                 d="M6 8l4-4 4 4M6 12l4 4 4-4"
                 stroke="currentColor"
@@ -138,10 +138,10 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
           <div
             ref={popupRef}
             style={{ left: position.left, bottom: position.bottom }}
-            className="fixed z-50 w-72 rounded-2xl border border-white/10 bg-[#141414] p-2 shadow-2xl"
+            className="fixed z-50 w-72 rounded-3xl border border-white/10 bg-[#141414] p-2 shadow-2xl"
           >
             <div className="flex items-center gap-3 px-3 py-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] text-sm font-medium text-white">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] text-sm font-medium text-white">
                 {initial}
               </div>
               <div className="min-w-0">
@@ -161,7 +161,7 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
               <Link
                 href="/console/account/pricing"
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                className="flex items-center justify-between rounded-xl px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
               >
                 Top-up Credits
                 <span className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-1 text-xs font-medium text-white">
@@ -171,7 +171,7 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
               <Link
                 href="/console/account/pricing"
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                className="flex items-center justify-between rounded-xl px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
               >
                 Go Pro
                 <span className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-1 text-xs font-medium text-white">
@@ -188,9 +188,9 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                  className="flex items-center gap-2.5 rounded-xl px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-zinc-400">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-zinc-400">
                     {item.icon}
                   </svg>
                   {item.label}
@@ -203,9 +203,9 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
             <button
               type="button"
               onClick={() => signOut({ redirectUrl: "/" })}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/5"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/5"
             >
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-zinc-400">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-zinc-400">
                 <path
                   d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
                   stroke="currentColor"

@@ -25,7 +25,7 @@ export default async function ConsoleHome() {
 
       <CreationBox />
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-3xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-muted-foreground">Recent activity</h2>
           <Link

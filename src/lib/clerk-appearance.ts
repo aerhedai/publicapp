@@ -27,7 +27,7 @@ export const clerkAppearance = {
     colorInputBackground: "#0a0a0a",
     colorInputText: "#fafafa",
     colorNeutral: "#fafafa",
-    borderRadius: "0.75rem",
+    borderRadius: "1rem",
     fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
   },
   elements: {
@@ -40,7 +40,7 @@ export const clerkAppearance = {
     // to respect the parent instead of its own default.
     rootBox: "!w-full",
     cardBox: "!w-full",
-    card: "!w-full !bg-[#141414] !border !border-white/10 !shadow-none !rounded-2xl !p-6",
+    card: "!w-full !bg-[#141414] !border !border-white/10 !shadow-none !rounded-3xl !p-6",
     header: "!text-white",
     headerTitle: "!text-white text-xl font-semibold font-[family-name:var(--font-bricolage)]",
     headerSubtitle: "!text-zinc-400 text-sm",

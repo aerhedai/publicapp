@@ -44,9 +44,9 @@ export function AuthModal() {
           type="button"
           aria-label="Close"
           onClick={close}
-          className="absolute -top-10 right-0 rounded-full p-2 text-white/70 transition-colors hover:text-white"
+          className="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
             <path
               d="M6 6l12 12M18 6L6 18"
               stroke="currentColor"

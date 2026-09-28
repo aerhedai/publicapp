@@ -40,7 +40,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
   }, [settingsOpen]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="rounded-3xl border border-border bg-card p-4">
       <textarea
         rows={3}
         placeholder={mode === "image" ? "Describe your image" : "Describe your video"}
@@ -53,11 +53,11 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
             type="button"
             onClick={() => setMode("image")}
             aria-label="Image mode"
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               mode === "image" ? "bg-white/15 text-white" : "text-muted-foreground hover:bg-white/5"
             }`}
           >
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
               <path
                 d="M4 5h16v14H4V5zM4 16l4-4 3 3 5-5 4 4"
                 stroke="currentColor"
@@ -71,11 +71,11 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
             type="button"
             onClick={() => setMode("video")}
             aria-label="Video mode"
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               mode === "video" ? "bg-white/15 text-white" : "text-muted-foreground hover:bg-white/5"
             }`}
           >
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
               <path
                 d="M3 7a2 2 0 012-2h9a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM21 8l-4 2.5v3L21 16V8z"
                 stroke="currentColor"
@@ -93,7 +93,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
             className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
           >
             {mode === "image" ? "Nano Banana 2" : "Seedance 2.0 Fast"}
-            <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -105,7 +105,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
               className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
             >
               {summarize(mode, imageSettings, videoSettings)}
-              <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+              <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
                 <path
                   d={settingsOpen ? "M6 12l4-4 4 4" : "M6 8l4 4 4-4"}
                   stroke="currentColor"

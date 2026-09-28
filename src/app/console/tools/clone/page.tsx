@@ -13,7 +13,7 @@ export default function CloneToolPage() {
         story from it.
       </p>
 
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-3xl border border-border bg-card p-4">
         <input
           type="text"
           placeholder="https://..."

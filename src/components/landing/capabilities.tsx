@@ -73,11 +73,13 @@ export function Capabilities() {
           {CAPABILITIES.map((c) => (
             <div
               key={c.title}
-              className="flex flex-col rounded-2xl border border-border bg-card p-6"
+              className="flex flex-col rounded-3xl border border-border bg-card p-6"
             >
-              <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-foreground">
-                {c.icon}
-              </svg>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5">
+                <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 text-foreground">
+                  {c.icon}
+                </svg>
+              </div>
               <h3 className="mt-4 font-display text-base font-medium">{c.title}</h3>
               <p className="mt-2 flex-1 text-sm text-muted-foreground">
                 {c.description}
@@ -87,7 +89,7 @@ export function Capabilities() {
                 className="mt-4 flex items-center gap-1 text-sm font-medium text-foreground transition-opacity hover:opacity-70"
               >
                 Try it
-                <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+                <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
                   <path
                     d="M4 10h12M11 5l5 5-5 5"
                     stroke="currentColor"

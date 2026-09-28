@@ -53,7 +53,7 @@ export function AuthCard({
   const switchHref = otherMode === "sign-in" ? "/sign-in" : "/sign-up";
 
   return (
-    <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl md:grid-cols-2">
+    <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-white/10 bg-card shadow-2xl md:grid-cols-2">
       <VideoPanel />
 
       {/* Generous outer padding here is deliberate - the Clerk card

@@ -239,13 +239,16 @@ export function ConsoleShell({
         </button>
       </div>
 
-      {/* Desktop sidebar - always visible, collapsible to icon rail */}
-      <aside className="hidden shrink-0 border-r border-border bg-card lg:flex">
-        <SidebarContent
-          credits={credits}
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((v) => !v)}
-        />
+      {/* Desktop sidebar - floating card, not docked flush to the viewport
+          edges: margin on all sides + its own rounded border/shadow. */}
+      <aside className="hidden shrink-0 p-3 lg:flex">
+        <div className="flex h-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+          <SidebarContent
+            credits={credits}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed((v) => !v)}
+          />
+        </div>
       </aside>
 
       {/* Mobile off-canvas sidebar - never collapsed, no point on a narrow screen */}

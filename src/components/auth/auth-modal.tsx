@@ -31,9 +31,12 @@ export function AuthModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Heavier frosted-glass treatment, not a flat dimmed scrim -
+          backdrop-blur-2xl (was -sm) plus backdrop-saturate pushes the
+          colors of whatever's behind it rather than just darkening them. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-2xl backdrop-saturate-150"
         onClick={close}
       />
       <div className="relative">

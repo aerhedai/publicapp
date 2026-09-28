@@ -53,15 +53,21 @@ export function AuthCard({
   const switchHref = otherMode === "sign-in" ? "/sign-in" : "/sign-up";
 
   return (
-    <div className="grid w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl md:grid-cols-2">
+    <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl md:grid-cols-2">
       <VideoPanel />
 
-      <div className="flex flex-col items-center justify-center px-6 py-10">
-        {mode === "sign-in" ? (
-          <SignIn routing="hash" forceRedirectUrl="/console" />
-        ) : (
-          <SignUp routing="hash" forceRedirectUrl="/console" />
-        )}
+      {/* Generous outer padding here is deliberate - the Clerk card
+          (styled in src/lib/clerk-appearance.ts) needs real margin between
+          its own edges and this column's boundary, not just the space its
+          own internal padding provides. */}
+      <div className="flex flex-col items-center justify-center px-8 py-12 md:px-12">
+        <div className="w-full max-w-sm">
+          {mode === "sign-in" ? (
+            <SignIn routing="hash" forceRedirectUrl="/console" />
+          ) : (
+            <SignUp routing="hash" forceRedirectUrl="/console" />
+          )}
+        </div>
 
         <Link
           href={switchHref}
@@ -71,7 +77,7 @@ export function AuthCard({
               onSwitchMode(otherMode);
             }
           }}
-          className="mt-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-6 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {mode === "sign-in" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
         </Link>

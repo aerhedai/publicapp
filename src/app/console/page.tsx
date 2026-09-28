@@ -1,40 +1,10 @@
-import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
-
-const QUICK_ACTIONS = [
-  {
-    href: "/console/generate",
-    title: "Generate",
-    description: "Create a video or image from a prompt and character references.",
-    icon: (
-      <path
-        d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
-    href: "/console/chat",
-    title: "Chat",
-    description: "Talk through an idea before turning it into a scene.",
-    icon: (
-      <path
-        d="M4 5h16v10H8l-4 4V5z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-];
+import { CreationBox } from "@/components/console/create/creation-box";
 
 export default async function ConsoleHome() {
   const { userId } = await auth();
@@ -48,49 +18,18 @@ export default async function ConsoleHome() {
     .limit(5);
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-8 py-10">
-      <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Welcome back
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pick a tool to get started.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-8 py-14">
+      <h1 className="font-display text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+        What do you want to create today?
+      </h1>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {QUICK_ACTIONS.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="group rounded-2xl border border-border bg-card p-6 transition-colors hover:border-white/20"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-foreground">
-              {action.icon}
-            </svg>
-            <h2 className="mt-4 font-display text-lg font-medium">{action.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
-            <span className="mt-4 flex items-center gap-1 text-sm font-medium text-gradient-accent">
-              Open
-              <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5 text-foreground">
-                <path
-                  d="M4 10h12M11 5l5 5-5 5"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          </Link>
-        ))}
-      </div>
+      <CreationBox />
 
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-muted-foreground">Recent activity</h2>
           <Link
-            href="/console/library"
+            href="/console/explore"
             className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             View all

@@ -4,7 +4,11 @@ import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 
-export default async function LibraryPage() {
+// Named "Explore" to match the requested nav structure - in practice this
+// shows your own generation history, not a community feed (there's no
+// public-content pipeline to draw from yet). Same real data as the old
+// /console/library page it replaces.
+export default async function ExplorePage() {
   const { userId } = await auth();
   if (!userId) return null; // layout already redirects; belt and suspenders
 
@@ -18,7 +22,7 @@ export default async function LibraryPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-8 py-10">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Library</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Explore</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Everything you&apos;ve generated.
         </p>

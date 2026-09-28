@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { AccountMenu } from "./account-menu";
+import { ConsoleBreadcrumb } from "./breadcrumb";
 
-const NAV_ITEMS = [
+const TOP_ITEMS = [
   {
     href: "/console",
     label: "Home",
@@ -20,52 +21,13 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/console/generate",
-    label: "Generate",
+    href: "/console/explore",
+    label: "Explore",
     icon: (
       <path
-        d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3zM5 15l.8 2 2 .8-2 .8L5 20l-.8-2-2-.8 2-.8L5 15zM19 14l.7 1.6 1.6.7-1.6.7L19 18l-.7-1.6-1.6-.7 1.6-.7L19 14z"
+        d="M12 21a9 9 0 100-18 9 9 0 000 18zM15 9l-2 6-6 2 2-6 6-2z"
         stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
-    href: "/console/chat",
-    label: "Chat",
-    icon: (
-      <path
-        d="M4 5h16v10H8l-4 4V5z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
-    href: "/console/library",
-    label: "Library",
-    icon: (
-      <path
-        d="M4 6h6v6H4V6zM14 6h6v6h-6V6zM4 16h6v2H4v-2zM14 16h6v2h-6v-2z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
-    href: "/console/settings",
-    label: "Settings",
-    icon: (
-      <path
-        d="M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 13.5a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V20a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H4a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H10a1.7 1.7 0 001-1.5V4a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V10a1.7 1.7 0 001.5 1H20a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"
-        stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -73,46 +35,172 @@ const NAV_ITEMS = [
   },
 ];
 
-function SidebarContent({ credits, onNavigate }: { credits: number; onNavigate?: () => void }) {
+const TOOL_ITEMS = [
+  {
+    href: "/console/tools/image",
+    label: "Image",
+    icon: (
+      <path
+        d="M4 5h16v14H4V5zM4 16l4-4 3 3 5-5 4 4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+  },
+  {
+    href: "/console/tools/video",
+    label: "Video",
+    icon: (
+      <path
+        d="M3 7a2 2 0 012-2h9a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM21 8l-4 2.5v3L21 16V8z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+  },
+  {
+    href: "/console/tools/voice",
+    label: "Voice",
+    icon: (
+      <path
+        d="M5 10v4M9 6v12M13 4v16M17 8v8M21 11v2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+  },
+  {
+    href: "/console/tools/clone",
+    label: "Clone",
+    icon: (
+      <path
+        d="M8 8h10v10H8V8zM4 4h10v10H4V4z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+  },
+];
+
+function NavLink({
+  href,
+  label,
+  icon,
+  collapsed,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
+  const active = href === "/console" ? pathname === "/console" : pathname.startsWith(href);
 
   return (
-    <div className="flex h-full w-60 flex-col px-4 py-6">
-      <Link href="/" className="font-display px-2 text-lg font-semibold tracking-tight">
-        VidGen
-      </Link>
+    <Link
+      href={href}
+      onClick={onNavigate}
+      title={collapsed ? label : undefined}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        collapsed ? "justify-center" : ""
+      } ${
+        active
+          ? "bg-white/10 text-foreground"
+          : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0">
+        {icon}
+      </svg>
+      {!collapsed && label}
+    </Link>
+  );
+}
+
+function SidebarContent({
+  credits,
+  collapsed,
+  onToggleCollapse,
+  onNavigate,
+}: {
+  credits: number;
+  collapsed: boolean;
+  onToggleCollapse?: () => void;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className={`flex h-full flex-col py-6 ${collapsed ? "w-20 px-2" : "w-60 px-4"}`}>
+      <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-2`}>
+        {!collapsed && (
+          <Link href="/" className="font-display text-lg font-semibold tracking-tight">
+            VidGen
+          </Link>
+        )}
+        {onToggleCollapse && (
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={onToggleCollapse}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+              <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M9 4v16" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       <nav className="mt-8 flex flex-1 flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
-          const active =
-            item.href === "/console" ? pathname === "/console" : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-white/10 text-foreground"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              }`}
-            >
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0">
-                {item.icon}
-              </svg>
-              {item.label}
-            </Link>
-          );
-        })}
+        {TOP_ITEMS.map((item) => (
+          <NavLink key={item.href} {...item} collapsed={collapsed} onNavigate={onNavigate} />
+        ))}
+
+        <div className={`mt-4 mb-1 ${collapsed ? "text-center" : "px-3"}`}>
+          {!collapsed && (
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Tools
+            </p>
+          )}
+          {collapsed && <div className="mx-auto h-px w-6 bg-white/10" />}
+        </div>
+        {TOOL_ITEMS.map((item) => (
+          <NavLink key={item.href} {...item} collapsed={collapsed} onNavigate={onNavigate} />
+        ))}
       </nav>
 
-      <div className="mt-auto flex items-center justify-between rounded-lg border border-border px-3 py-3">
-        <div>
-          <p className="text-xs text-muted-foreground">Credits</p>
-          <p className="text-sm font-medium">{credits}</p>
-        </div>
-        <UserButton />
-      </div>
+      {!collapsed && (
+        <Link
+          href="/console/account/pricing"
+          className="mb-3 flex items-center justify-between rounded-lg bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          <span className="flex items-center gap-1.5">
+            Go Pro
+            <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
+              <path
+                d="M4 10h12M11 5l5 5-5 5"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs">45% off</span>
+        </Link>
+      )}
+
+      <AccountMenu credits={credits} collapsed={collapsed} />
     </div>
   );
 }
@@ -125,6 +213,7 @@ export function ConsoleShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="flex flex-1 flex-col lg:flex-row">
@@ -150,12 +239,16 @@ export function ConsoleShell({
         </button>
       </div>
 
-      {/* Desktop sidebar - always visible */}
+      {/* Desktop sidebar - always visible, collapsible to icon rail */}
       <aside className="hidden shrink-0 border-r border-border bg-card lg:flex">
-        <SidebarContent credits={credits} />
+        <SidebarContent
+          credits={credits}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((v) => !v)}
+        />
       </aside>
 
-      {/* Mobile off-canvas sidebar */}
+      {/* Mobile off-canvas sidebar - never collapsed, no point on a narrow screen */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -164,12 +257,21 @@ export function ConsoleShell({
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute inset-y-0 left-0 border-r border-border bg-card shadow-2xl">
-            <SidebarContent credits={credits} onNavigate={() => setMobileOpen(false)} />
+            <SidebarContent
+              credits={credits}
+              collapsed={false}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </div>
         </div>
       )}
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="border-b border-border px-8 py-4 text-sm font-medium">
+          <ConsoleBreadcrumb />
+        </div>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
     </div>
   );
 }

@@ -2,15 +2,14 @@
 // unauthenticated (see src/proxy.ts), so real generation can't be wired up
 // here. Its job is purely to make "AI video generation" concrete before a
 // visitor has scrolled or signed up, the same device the BytePlus/Dreamina
-// reference page uses. Clicking anywhere routes into the console (which
-// prompts sign-in for a logged-out visitor, same as the nav's Console button).
-import Link from "next/link";
+// reference page uses. Clicking anywhere opens the sign-up modal.
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
 export function GeneratorPreview() {
   return (
-    <Link
-      href="/console"
-      className="group block w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-4 shadow-2xl backdrop-blur-xl transition-colors hover:border-white/20 sm:p-5"
+    <AuthTrigger
+      mode="sign-up"
+      className="group block w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-2xl backdrop-blur-xl transition-colors hover:border-white/20 sm:p-5"
     >
       <div className="mb-3 flex items-center gap-2">
         <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
@@ -54,6 +53,6 @@ export function GeneratorPreview() {
           Generate
         </span>
       </div>
-    </Link>
+    </AuthTrigger>
   );
 }

@@ -1,19 +1,26 @@
 import Link from "next/link";
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
-const COLUMNS = [
+const LINK_CLASS = "text-sm text-muted-foreground transition-colors hover:text-foreground";
+
+type FooterLink =
+  | { label: string; href: string }
+  | { label: string; authMode: "sign-in" | "sign-up" };
+
+const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Product",
     links: [
       { label: "Pricing", href: "/#pricing" },
       { label: "Capabilities", href: "/#capabilities" },
-      { label: "Sign up", href: "/sign-up" },
+      { label: "Sign up", authMode: "sign-up" as const },
     ],
   },
   {
     heading: "Company",
     links: [
-      { label: "Log in", href: "/sign-in" },
-      { label: "Console", href: "/console" },
+      { label: "Log in", authMode: "sign-in" as const },
+      { label: "Console", authMode: "sign-in" as const },
     ],
   },
   {
@@ -41,12 +48,15 @@ export function Footer() {
               <ul className="mt-3 space-y-2">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link.label}
-                    </Link>
+                    {"authMode" in link ? (
+                      <AuthTrigger mode={link.authMode} className={LINK_CLASS}>
+                        {link.label}
+                      </AuthTrigger>
+                    ) : (
+                      <Link href={link.href} className={LINK_CLASS}>
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

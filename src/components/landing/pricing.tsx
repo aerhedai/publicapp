@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
 // Credit costs mirror src/lib/credits.ts's CREDIT_COST_BY_TYPE exactly
 // (image=1, video=5) - keep these in sync if that changes. Dollar amounts
@@ -104,8 +104,8 @@ export function Pricing() {
                   ))}
                 </ul>
 
-                <Link
-                  href="/sign-up"
+                <AuthTrigger
+                  mode="sign-up"
                   className={`mt-6 w-full rounded-full px-5 py-2.5 text-center text-sm font-medium transition-opacity hover:opacity-90 ${
                     tier.popular
                       ? "bg-foreground text-background"
@@ -113,7 +113,7 @@ export function Pricing() {
                   }`}
                 >
                   Get Started
-                </Link>
+                </AuthTrigger>
               </div>
             </div>
           ))}

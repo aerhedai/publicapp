@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
 export function LandingNav() {
   return (
@@ -8,18 +9,18 @@ export function LandingNav() {
           VidGen
         </Link>
         <div className="flex items-center gap-4">
-          <Link
-            href="/sign-in"
+          <AuthTrigger
+            mode="sign-in"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Log in
-          </Link>
-          <Link
-            href="/console"
+          </AuthTrigger>
+          <AuthTrigger
+            mode="sign-in"
             className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
             Console
-          </Link>
+          </AuthTrigger>
         </div>
       </div>
     </header>

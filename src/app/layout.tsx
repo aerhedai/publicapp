@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import { clerkAppearance } from "@/lib/clerk-appearance";
+import { AuthModalProvider } from "@/components/auth/auth-modal-context";
+import { AuthModal } from "@/components/auth/auth-modal";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +38,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased dark`}
       >
-        <body className="min-h-full flex flex-col">{children}</body>
+        <body className="min-h-full flex flex-col">
+          <AuthModalProvider>
+            {children}
+            <AuthModal />
+          </AuthModalProvider>
+        </body>
       </html>
     </ClerkProvider>
   );

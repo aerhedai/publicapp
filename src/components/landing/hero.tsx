@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { GeneratorPreview } from "./generator-preview";
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
 // No real footage exists yet to use as a hero background (this session's
 // test-generated videos were all deleted after verification) - this uses
@@ -35,12 +35,12 @@ export function Hero() {
           Character-consistent, cinematically-directed video and image
           generation - from a single line of description to a finished shot.
         </p>
-        <Link
-          href="/console"
+        <AuthTrigger
+          mode="sign-up"
           className="mt-8 rounded-full bg-foreground px-7 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
         >
           Start Creating
-        </Link>
+        </AuthTrigger>
       </div>
 
       <div className="mx-auto mt-14 flex max-w-4xl justify-center">

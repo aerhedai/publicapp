@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AuthTrigger } from "@/components/auth/auth-trigger";
 
 const CAPABILITIES = [
   {
@@ -82,8 +82,8 @@ export function Capabilities() {
               <p className="mt-2 flex-1 text-sm text-muted-foreground">
                 {c.description}
               </p>
-              <Link
-                href="/sign-up"
+              <AuthTrigger
+                mode="sign-up"
                 className="mt-4 flex items-center gap-1 text-sm font-medium text-foreground transition-opacity hover:opacity-70"
               >
                 Try it
@@ -96,7 +96,7 @@ export function Capabilities() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </Link>
+              </AuthTrigger>
             </div>
           ))}
         </div>

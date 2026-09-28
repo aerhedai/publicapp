@@ -101,6 +101,26 @@ npm run dev
   column you update in place - that loses the audit trail and makes a
   double-spend bug much easier to introduce silently.
 
+## Branches and environments
+
+- `main` is the production branch (protected - changes land via PR, not
+  direct push). Every push here deploys to the production domain and uses
+  the real Neon/R2/Upstash/Clerk resources.
+- `dev` is the working branch, deployed as a Vercel Preview. It uses
+  entirely separate resources (its own Neon branch, its own R2 bucket,
+  its own Upstash database) so testing here can never corrupt or leak
+  into production data - see the `Preview`-scoped values in Vercel's
+  environment variables (or the `_DEV`-suffixed entries in
+  `.env.example`/your own `.env.local`) for exactly what differs.
+- Clerk is the one exception: both branches currently share the same
+  Clerk **Development** instance, since a Clerk **Production** instance
+  requires a verified custom domain this project doesn't have yet. Until
+  that exists, sign-ups on `dev` and `main` both land in the same Clerk
+  user pool.
+- Schema changes are not yet automatically synced between the two Neon
+  branches - run `npm run db:push` by hand against each `DATABASE_URL`
+  after a schema change, until a CI migration step replaces this.
+
 ## What's deliberately not here yet
 
 - Payments/Stripe integration (credits ledger table exists, nothing writes

@@ -7,6 +7,7 @@ import {
   uuid,
   pgEnum,
   bigint,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Mirrors the Clerk user - Clerk is the source of truth for identity/auth,
@@ -47,23 +48,51 @@ export const uploads = pgTable("uploads", {
 
 export const jobStatus = pgEnum("job_status", [
   "queued",
+  "warming", // dispatched to the GPU worker, cold-start/container-boot in progress
   "processing",
   "done",
   "failed",
 ]);
 
+// Picks which ComfyUI workflow template a job dispatches to - required on
+// every job, not inferred from `input`'s shape.
+export const jobType = pgEnum("job_type", ["image", "video"]);
+
 // Deliberately generic - `input` is a jsonb blob so the video-generation
 // side of the app can put whatever shape it needs in here without this
 // table needing a migration every time that shape changes.
-export const generationJobs = pgTable("generation_jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  status: jobStatus("status").notNull().default("queued"),
-  input: jsonb("input").notNull(),
-  outputStorageKey: text("output_storage_key"),
-  error: text("error"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const generationJobs = pgTable(
+  "generation_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: jobType("type").notNull(),
+    status: jobStatus("status").notNull().default("queued"),
+    input: jsonb("input").notNull(),
+    outputStorageKey: text("output_storage_key"),
+    error: text("error"),
+
+    // --- RunPod dispatch / credit reserve-release / idempotency ---
+    runpodJobId: text("runpod_job_id"), // correlates an inbound webhook back to this row
+    estimatedCredits: integer("estimated_credits"), // reserved at dispatch time, by `type`
+    actualCostCents: integer("actual_cost_cents"), // observability only, from RunPod's real exec time
+    runpodExecMs: integer("runpod_exec_ms"), // observability only, from the webhook payload
+    dispatchAttempts: integer("dispatch_attempts").notNull().default(0),
+    dispatchedAt: timestamp("dispatched_at", { withTimezone: true }), // start of the "warming" window
+    // Point at the credit_ledger rows for this job's reserve and eventual
+    // confirm/release - `settleLedgerId` being non-null is the idempotency
+    // guard against a duplicate webhook delivery re-processing a job.
+    reserveLedgerId: uuid("reserve_ledger_id"),
+    settleLedgerId: uuid("settle_ledger_id"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Postgres unique indexes allow multiple NULLs, so jobs that haven't
+    // been dispatched yet (runpodJobId still null) don't collide.
+    uniqueIndex("generation_jobs_runpod_job_id_idx").on(table.runpodJobId),
+  ]
+);

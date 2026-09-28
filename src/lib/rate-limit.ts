@@ -1,7 +1,9 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
+// Exported so other modules (src/lib/concurrency.ts) can reuse the same
+// client instead of opening a second connection to the same Redis instance.
+export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL ?? "",
   token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
 });

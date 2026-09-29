@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { CreationsTabs } from "./creations-tabs";
 import { ToolSelector, type SubMode } from "./tool-selector";
-import { AddReferencesPanel, ComingSoon, LabeledImageSlot } from "./reference-panels";
-import { VideoSettingsPopover } from "./settings-popover";
-import { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./types";
+import { ComingSoon } from "./reference-panels";
+import { VideoChat } from "./video-chat";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 
 const SUB_MODES: SubMode[] = [
@@ -71,18 +70,6 @@ interface JobRow {
 
 export function VideoToolClient({ jobs }: { jobs: JobRow[] }) {
   const [subMode, setSubMode] = useState("create");
-  const [settings, setSettings] = useState<VideoSettings>(DEFAULT_VIDEO_SETTINGS);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) setSettingsOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [settingsOpen]);
 
   return (
     <>
@@ -123,103 +110,13 @@ export function VideoToolClient({ jobs }: { jobs: JobRow[] }) {
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
           <ToolSelector subModes={SUB_MODES} activeSubMode={subMode} onSubModeChange={setSubMode} />
 
-          <div className="rounded-3xl border border-border bg-card p-4">
-            {subMode === "create" ? (
-              <>
-                <div className="grid grid-cols-[auto_1fr] gap-4">
-                  <div className="flex flex-col gap-4 border-r border-border pr-4">
-                    <div className="flex gap-2">
-                      <LabeledImageSlot
-                        label="Start Image"
-                        icon={
-                          <path
-                            d="M4 5h16v14H4V5zM4 16l4-4 3 3 5-5 4 4"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        }
-                      />
-                      <LabeledImageSlot
-                        label="End Image"
-                        icon={
-                          <path
-                            d="M4 5h16v14H4V5zM4 16l4-4 3 3 5-5 4 4"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        }
-                      />
-                    </div>
-                    <AddReferencesPanel />
-                  </div>
-                  <textarea
-                    rows={5}
-                    placeholder="Describe your video"
-                    className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-                  />
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
-                    >
-                      Seedance 2.0 Fast
-                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-                        <path
-                          d="M6 8l4 4 4-4"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-
-                    <div className="relative" ref={popoverRef}>
-                      <button
-                        type="button"
-                        onClick={() => setSettingsOpen((v) => !v)}
-                        className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
-                      >
-                        {`${settings.aspectRatio} · ${settings.durationSeconds} Sec · ${settings.resolution}`}
-                        <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-                          <path
-                            d={settingsOpen ? "M6 12l4-4 4 4" : "M6 8l4 4 4-4"}
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                      {settingsOpen && (
-                        <div className="absolute bottom-full right-0 z-20 mb-2">
-                          <VideoSettingsPopover settings={settings} onChange={setSettings} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled
-                    title="Generation isn't wired up yet - coming soon"
-                    className="cursor-not-allowed rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white opacity-50"
-                  >
-                    Generate
-                  </button>
-                </div>
-              </>
-            ) : (
+          {subMode === "create" ? (
+            <VideoChat />
+          ) : (
+            <div className="rounded-3xl border border-border bg-card p-4">
               <ComingSoon label={SUB_MODES.find((s) => s.key === subMode)?.label ?? subMode} />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </>

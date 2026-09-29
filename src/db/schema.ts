@@ -58,6 +58,23 @@ export const jobStatus = pgEnum("job_status", [
 // every job, not inferred from `input`'s shape.
 export const jobType = pgEnum("job_type", ["image", "video"]);
 
+// A reusable, user-owned character reference photo - either uploaded
+// directly or minted by a prior "generate a reference image" job. Distinct
+// from `uploads`: this is a labeled, cross-job library, not a one-off file.
+export const referenceSource = pgEnum("reference_source", ["uploaded", "generated"]);
+
+export const characterReferences = pgTable("character_references", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  label: text("label").notNull(), // user-facing name, e.g. "Sarah"
+  storageKey: text("storage_key").notNull(),
+  source: referenceSource("source").notNull(),
+  sourceJobId: uuid("source_job_id"), // set when source = "generated"
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Deliberately generic - `input` is a jsonb blob so the video-generation
 // side of the app can put whatever shape it needs in here without this
 // table needing a migration every time that shape changes.
@@ -86,6 +103,13 @@ export const generationJobs = pgTable(
     // guard against a duplicate webhook delivery re-processing a job.
     reserveLedgerId: uuid("reserve_ledger_id"),
     settleLedgerId: uuid("settle_ledger_id"),
+
+    // Set when this job's real purpose is minting a new character_references
+    // row (the "generate a reference photo for N credits" flow), not just
+    // producing a normal user-facing output. When set and the job completes
+    // successfully, apply-job-result.ts also inserts into characterReferences
+    // using this as the label and the job's own output as the storage key.
+    createsReferenceLabel: text("creates_reference_label"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

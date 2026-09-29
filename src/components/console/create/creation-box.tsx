@@ -92,7 +92,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
             type="button"
             className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
           >
-            {mode === "image" ? "Nano Banana 2" : "Seedance 2.0 Fast"}
+            {mode === "image" ? "Nano Banana 2" : "MiniMax H3"}
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

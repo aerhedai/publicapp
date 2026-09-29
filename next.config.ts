@@ -25,7 +25,12 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://img.clerk.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
+  // Presigned uploads (src/storage/r2.ts) are PUT directly from the browser
+  // to R2, by design - the server never proxies file bytes. Without this,
+  // the browser blocks the request at the CSP layer before it even reaches
+  // R2's own CORS check (confirmed live - a real "Failed to fetch" that
+  // looked like a CORS bug was actually this).
+  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com",
   "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",

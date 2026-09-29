@@ -80,6 +80,7 @@ export async function GET(req: Request) {
         const { runpodJobId } = await dispatchJob({
           jobId: claimed.id,
           userId: claimed.userId,
+          type: claimed.type,
           input: claimed.input as JobInput,
         });
         await db

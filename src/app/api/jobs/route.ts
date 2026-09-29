@@ -33,6 +33,13 @@ export async function POST(req: Request) {
   if (body.type !== "image" && body.type !== "video") {
     return NextResponse.json({ error: "type must be \"image\" or \"video\"" }, { status: 400 });
   }
+  // Optional: marks this job as minting a new character reference rather
+  // than (or in addition to) producing a normal user-facing output - see
+  // src/lib/apply-job-result.ts, which inserts into character_references
+  // when this is set and the job later completes successfully.
+  if (body.createsReferenceLabel !== undefined && (typeof body.createsReferenceLabel !== "string" || !body.createsReferenceLabel.trim())) {
+    return NextResponse.json({ error: "createsReferenceLabel must be a non-empty string" }, { status: 400 });
+  }
 
   // Rejected here, before ensureUserRow/insert, so a policy-violating
   // request never occupies a queued slot or risks being billed.
@@ -61,7 +68,12 @@ export async function POST(req: Request) {
 
   const [job] = await db
     .insert(generationJobs)
-    .values({ userId, type: body.type, input: body.input })
+    .values({
+      userId,
+      type: body.type,
+      input: body.input,
+      createsReferenceLabel: body.createsReferenceLabel?.trim() ?? null,
+    })
     .returning();
 
   return NextResponse.json({ job });

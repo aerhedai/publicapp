@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { generationJobs } from "@/db/schema";
+import { generationJobs, characterReferences } from "@/db/schema";
 import { CREDIT_COST_BY_TYPE, confirmCredits, releaseCredits } from "@/lib/credits";
 import { releaseGlobalSlot } from "@/lib/concurrency";
 import type { RunpodJobStatus } from "@/lib/runpod";
@@ -47,5 +47,20 @@ export async function applyRunpodResult(
       updatedAt: new Date(),
     })
     .where(eq(generationJobs.id, job.id));
+
+  // This job's real purpose was minting a reusable reference photo (the
+  // "generate a reference for N credits" flow), not just producing a normal
+  // user-facing output - register it in the shared library so it's usable by
+  // future image/video requests without re-uploading or regenerating.
+  if (job.createsReferenceLabel) {
+    await db.insert(characterReferences).values({
+      userId: job.userId,
+      label: job.createsReferenceLabel,
+      storageKey: output.outputStorageKey!, // guaranteed non-null - `failed` already checked this above
+      source: "generated",
+      sourceJobId: job.id,
+    });
+  }
+
   await releaseGlobalSlot();
 }

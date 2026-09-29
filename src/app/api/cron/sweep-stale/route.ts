@@ -67,7 +67,7 @@ export async function GET(req: Request) {
     }
 
     try {
-      const status = await getJobStatus(job.runpodJobId);
+      const status = await getJobStatus(job.type, job.runpodJobId);
       const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
 
       if (status.status === "COMPLETED" || status.status === "FAILED") {
@@ -89,7 +89,7 @@ export async function GET(req: Request) {
       } else {
         // Still not terminal despite exceeding this type's own worst-case
         // runtime budget - genuinely stuck, not just a slow webhook.
-        await cancelJob(job.runpodJobId);
+        await cancelJob(job.type, job.runpodJobId);
         await releaseCredits({
           jobId: job.id,
           userId: job.userId,

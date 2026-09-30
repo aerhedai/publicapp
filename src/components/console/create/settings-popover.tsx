@@ -101,7 +101,7 @@ export function ImageSettingsPopover({
       <div className="mt-5">
         <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
         <div className="flex flex-wrap gap-2">
-          {(["0.5K", "1K", "2K", "4K"] as const).map((res) => (
+          {(["1K", "2K"] as const).map((res) => (
             <Pill
               key={res}
               label={res}
@@ -122,12 +122,12 @@ export function VideoSettingsPopover({
 }: {
   settings: VideoSettings;
   onChange: (next: VideoSettings) => void;
-  // Chat-driven generation only exposes aspect ratio + duration today - the
-  // model call these two actually reach (see graph_builder.py's
-  // build_scene_graph) - resolution/audio stay hidden rather than showing
-  // controls that would silently no-op. /console's own CreationBox keeps
-  // the full popover (compact defaults false) since it's still unwired
-  // there regardless.
+  // Audio isn't wired to a real graph input yet (MiniMax H3's graph has no
+  // audio-reference/toggle input - only a text `audio_tag` description and
+  // an always-on audio output path), so it stays hidden rather than showing
+  // a control that would silently no-op. Resolution (480p/768p) IS wired
+  // (ResolutionSelector's `megapixels` param, see the video worker's
+  // graph_builder.py) and always shows regardless of this flag.
   compact?: boolean;
 }) {
   return (
@@ -159,41 +159,39 @@ export function VideoSettingsPopover({
         />
       </div>
 
-      {!compact && (
-        <>
-          <div className="mt-5">
-            <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
-            <div className="flex flex-wrap gap-2">
-              {(["480p", "720p"] as const).map((res) => (
-                <Pill
-                  key={res}
-                  label={res}
-                  active={settings.resolution === res}
-                  onClick={() => onChange({ ...settings, resolution: res })}
-                />
-              ))}
-            </div>
-          </div>
+      <div className="mt-5">
+        <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
+        <div className="flex flex-wrap gap-2">
+          {(["480p", "768p"] as const).map((res) => (
+            <Pill
+              key={res}
+              label={res}
+              active={settings.resolution === res}
+              onClick={() => onChange({ ...settings, resolution: res })}
+            />
+          ))}
+        </div>
+      </div>
 
-          <div className="mt-5 flex items-center justify-between">
-            <p className="text-xs font-medium text-zinc-400">Audio</p>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={settings.audio}
-              onClick={() => onChange({ ...settings, audio: !settings.audio })}
-              className={`relative h-6 w-11 rounded-full transition-colors ${
-                settings.audio ? "bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))]" : "bg-white/10"
+      {!compact && (
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-xs font-medium text-zinc-400">Audio</p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.audio}
+            onClick={() => onChange({ ...settings, audio: !settings.audio })}
+            className={`relative h-6 w-11 rounded-full transition-colors ${
+              settings.audio ? "bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))]" : "bg-white/10"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                settings.audio ? "translate-x-5" : "translate-x-0.5"
               }`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  settings.audio ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
-        </>
+            />
+          </button>
+        </div>
       )}
     </div>
   );

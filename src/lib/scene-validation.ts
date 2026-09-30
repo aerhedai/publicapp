@@ -40,6 +40,12 @@ export interface PublicVideoScene {
   // set here from the chat UI's video settings popover, never inferred by
   // the LLM. "Auto" means "let the worker use its own default."
   aspect_ratio: string;
+  // Consumed by graph_builder.py as ResolutionSelector's `megapixels` param
+  // (node 115 in the base workflow) - "480p"/"768p" map to 0.4/1.0 megapixels
+  // there, chosen to match real 16:9 pixel counts for those tiers. Set here
+  // from the video settings popover, same as aspect_ratio/duration - the LLM
+  // never decides this either.
+  resolution: string;
 }
 
 export type SceneValidationResult =
@@ -121,9 +127,10 @@ export function validateVideoSceneDraft(
       dialogue: [],
       audio_tag: draft.audioTag ?? "",
       // Overwritten client-side from the video settings popover right
-      // before dispatch (see video-chat.tsx) - this default only matters
+      // before dispatch (see video-chat.tsx) - these defaults only matter
       // if that step is ever skipped.
       aspect_ratio: "Auto",
+      resolution: "480p",
     },
     characterRefs,
   };

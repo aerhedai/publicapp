@@ -61,6 +61,7 @@ async function pollJobUntilDone(jobId: string, timeoutMs = 5 * 60 * 1000): Promi
 export function VideoChat({
   dispatchOverride,
   onDispatched,
+  referencesPanel,
 }: {
   // When provided, called instead of POSTing to /api/jobs directly - used by
   // the storyboard wrapper (src/app/console/projects/**) to save a scene
@@ -70,6 +71,12 @@ export function VideoChat({
   // page passes neither prop and keeps today's behavior exactly.
   dispatchOverride?: (params: { scene: PublicVideoScene; characterRefs: Record<string, string> }) => Promise<void>;
   onDispatched?: () => void;
+  // Rendered inside the same bordered textarea box, in a grid-cols-[auto_1fr]
+  // layout matching the image tool's format exactly (see video-tool-client.tsx,
+  // which owns the actual upload/registration state) - the whole reason this
+  // exists is so references can be attached up front instead of only via the
+  // LLM asking mid-conversation.
+  referencesPanel?: React.ReactNode;
 } = {}) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatTurn[]>([]);
@@ -116,8 +123,8 @@ export function VideoChat({
         setMessages([...nextMessages, { role: "assistant", content: summary }]);
         setMissingState({ missing: data.missing, generateCostCredits: data.generateCostCredits });
       } else if (data.type === "ready") {
-        // The LLM never decides duration/aspect ratio - these two are the
-        // only settings the worker actually reads per-job (graph_builder.py's
+        // The LLM never decides duration/aspect ratio/resolution - these are
+        // the settings the worker actually reads per-job (graph_builder.py's
         // build_scene_graph), so the popover's current values always
         // override whatever the draft defaulted to, right before the user
         // ever sees a number.
@@ -125,6 +132,7 @@ export function VideoChat({
           ...data.scene,
           duration: videoSettings.durationSeconds,
           aspect_ratio: videoSettings.aspectRatio,
+          resolution: videoSettings.resolution,
         };
         const summary = `Ready to generate: ${scene.action} (${scene.duration}s, ${data.estimatedCredits} credits).`;
         setMessages([...nextMessages, { role: "assistant", content: summary }]);
@@ -309,27 +317,48 @@ export function VideoChat({
       )}
 
       <div className="rounded-3xl border border-border bg-card p-4">
-        <textarea
-          rows={4}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder={dispatched ? "Describe another video" : "Describe your video"}
-          className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-        />
+        {referencesPanel ? (
+          <div className="grid grid-cols-[auto_1fr] gap-4">
+            <div className="border-r border-border pr-4">{referencesPanel}</div>
+            <textarea
+              rows={4}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={dispatched ? "Describe another video" : "Describe your video"}
+              className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
+            />
+          </div>
+        ) : (
+          <textarea
+            rows={4}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={dispatched ? "Describe another video" : "Describe your video"}
+            className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
+          />
+        )}
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300">MiniMax H3</span>
           <div className="relative" ref={settingsPopoverRef}>
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
               className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
             >
-              {`${videoSettings.aspectRatio} · ${videoSettings.durationSeconds}s`}
+              {`${videoSettings.aspectRatio} · ${videoSettings.durationSeconds}s · ${videoSettings.resolution}`}
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
                 <path
                   d={settingsOpen ? "M6 12l4-4 4 4" : "M6 8l4 4 4-4"}
@@ -345,6 +374,7 @@ export function VideoChat({
                 <VideoSettingsPopover settings={videoSettings} onChange={setVideoSettings} compact />
               </div>
             )}
+          </div>
           </div>
 
           <button

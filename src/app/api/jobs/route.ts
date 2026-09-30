@@ -5,6 +5,7 @@ import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 import { createGenerationJob } from "@/lib/create-job";
+import { dispatchOneJob } from "@/lib/dispatch-one-job";
 
 // `input` is intentionally untyped/generic here (see schema.ts) - the
 // video-generation side of the app owns what shape it needs; this route
@@ -46,7 +47,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.reason, message: result.message }, { status });
   }
 
-  return NextResponse.json({ job: result.job });
+  // Best-effort immediate dispatch, right in this request - the common case
+  // (no other job in flight, a global RunPod slot free) starts generating
+  // within this same request instead of waiting for the next cron tick, so
+  // "press generate" reflects real elapsed time instead of queue latency.
+  // Never lets a dispatch hiccup fail the request: on any outcome other
+  // than a clean dispatch the row is simply left as createGenerationJob set
+  // it ("queued"), which /api/cron/dispatch's batch loop retries normally -
+  // this call is an optimization, not something the client depends on.
+  let job = result.job;
+  try {
+    const outcome = await dispatchOneJob(job);
+    if (outcome.outcome === "dispatched" || outcome.outcome === "insufficient_credits") {
+      const [fresh] = await db.select().from(generationJobs).where(eq(generationJobs.id, job.id));
+      if (fresh) job = fresh;
+    }
+  } catch (err) {
+    console.error(`[api/jobs] inline dispatch attempt threw for job ${job.id}:`, err);
+  }
+
+  return NextResponse.json({ job });
 }
 
 export async function GET() {

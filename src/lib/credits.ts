@@ -17,12 +17,19 @@ import { eq, sql } from "drizzle-orm";
 // transactional driver (e.g. neon-serverless's pooled/websocket client)
 // instead of neon-http - noted here, not silently assumed away.
 
-// Flat per-type estimate, reserved at dispatch time and refined later once
-// actualCostCents data exists (see schema.ts's own comment on that column).
+// Flat per-type estimate, reserved at dispatch time. These ratios are real,
+// not placeholders - computed from this session's own live-measured worker
+// execution times: image (Flux.2 Klein, AMPERE_24 @ $0.69/hr, ~7.1s avg)
+// costs ~$0.0014/gen; video (MiniMax H3, ADA_24 @ $1.10/hr, ~5.9min avg)
+// costs ~$0.108/gen - a ~79:1 real cost ratio, not the 5:1 this used to
+// charge (every video was being sold at a steep loss relative to images).
+// 1 credit = 1 image = the base unit; video rounds the real ~77x ratio up
+// slightly to a clean 80 for margin safety. See src/lib/pricing-tiers.ts
+// for the $/credit sell price this implies (~10x markup over these costs).
 export const CREDIT_COST_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
   image: 1,
-  video: 5,
-  stitch: 1, // flat placeholder, same convention as the dollar amounts in pricing-tiers.ts
+  video: 80,
+  stitch: 1, // ffmpeg concat is CPU-only and seconds of work - negligible real cost, flat placeholder is fine
 };
 
 export async function getCreditBalance(userId: string): Promise<number> {

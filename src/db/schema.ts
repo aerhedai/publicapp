@@ -7,6 +7,7 @@ import {
   uuid,
   pgEnum,
   bigint,
+  boolean,
   uniqueIndex,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -210,3 +211,34 @@ export const projectClips = pgTable(
   },
   (table) => [uniqueIndex("project_clips_project_id_order_index_idx").on(table.projectId, table.orderIndex)]
 );
+
+export const subscriptionStatus = pgEnum("subscription_status", [
+  "active",
+  "past_due",
+  "canceled",
+  "incomplete",
+]);
+
+// One row per user's Stripe subscription - tracks the tier/status so the
+// account page can render "Creator plan, renews Oct 30" without a live
+// Stripe API call, and so customer.subscription.* webhooks have somewhere
+// to write. NOT what grants credits - invoice.paid does that, straight into
+// credit_ledger keyed by invoice id - this table is display/lifecycle state
+// only. userId is unique: a user has at most one active subscription at a
+// time (upgrading/downgrading changes the Stripe subscription in place via
+// the Customer Portal, it doesn't create a second row).
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+  tierId: text("tier_id").notNull(), // matches PricingTier.id in src/lib/pricing-tiers.ts
+  status: subscriptionStatus("status").notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

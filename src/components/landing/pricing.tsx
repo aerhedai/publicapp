@@ -10,7 +10,8 @@ export function Pricing() {
             Simple, credit-based pricing
           </h2>
           <p className="mt-3 text-muted-foreground">
-            One-time credit packs. Pay for what you generate, buy more any time.
+            Monthly subscription or one-time top-up - both add to the same credit balance. 1 credit = 1 image, 80
+            credits = 1 video.
           </p>
         </div>
 
@@ -39,9 +40,10 @@ export function Pricing() {
                 <h3 className="font-display text-lg font-medium">{tier.name}</h3>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-3xl font-semibold">${(tier.priceCents / 100).toFixed(0)}</span>
+                  <span className="text-sm text-muted-foreground">/mo</span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {tier.credits} credits
+                  {tier.credits.toLocaleString()} credits - or buy as a one-time top-up
                 </p>
 
                 <ul className="mt-6 flex-1 space-y-3 text-sm">

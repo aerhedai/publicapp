@@ -1,17 +1,22 @@
-// Single source of truth for the 3 credit-pack tiers - previously duplicated
-// verbatim between src/components/landing/pricing.tsx and
+// Single source of truth for the 3 tiers - previously duplicated verbatim
+// between src/components/landing/pricing.tsx and
 // src/app/console/account/plan/page.tsx, which is exactly how "Scene
 // continuity chaining" ended up listed as a paid feature with nothing behind
 // it in two places at once. Both pages now import this.
 //
-// These are one-time credit-pack purchases, not subscriptions (see the
-// stripe-best-practices skill: Checkout Sessions for one-time payments,
-// not the Billing/subscription APIs) - priceCents is what a single Stripe
-// Checkout Session charges once, not a recurring amount.
+// Each tier is purchasable two ways, both adding to the same credit
+// balance: a recurring monthly subscription (auto-grants `credits` every
+// billing cycle - see the invoice.paid handler in
+// src/app/api/webhooks/stripe/route.ts) or a one-time top-up (grants
+// `credits` once, never expires). Real Stripe Products/Prices were created
+// for both modes on every tier (not inline price_data) - see
+// stripePriceIdMonthly/stripePriceIdOneTime below; the Product/Price
+// metadata mirrors credits/appTierId so the webhook can resolve either
+// without trusting Checkout Session metadata alone.
 //
-// Credit costs mirror src/lib/credits.ts's CREDIT_COST_BY_TYPE exactly
-// (image=1, video=5, stitch=1). Dollar amounts are placeholders, not a
-// pricing decision - swap once real numbers are set.
+// priceCents/credits are not placeholders - computed from this session's
+// own live-measured worker costs (src/lib/credits.ts's own comment has the
+// real numbers) at roughly a 10x gross margin over raw compute cost.
 export interface PricingTier {
   id: "starter" | "creator" | "studio";
   name: string;
@@ -19,6 +24,8 @@ export interface PricingTier {
   credits: number;
   popular: boolean;
   features: string[];
+  stripePriceIdMonthly: string;
+  stripePriceIdOneTime: string;
 }
 
 export const PRICING_TIERS: PricingTier[] = [
@@ -26,36 +33,40 @@ export const PRICING_TIERS: PricingTier[] = [
     id: "starter",
     name: "Starter",
     priceCents: 900,
-    credits: 50,
+    credits: 640,
     popular: false,
-    features: ["~50 images or ~10 videos", "Character reference uploads", "Standard queue"],
+    features: ["~640 images or ~8 videos a month", "Character reference uploads", "Standard queue"],
+    stripePriceIdMonthly: "price_1ULPQeCgqolNE5ECwbuSouuJ",
+    stripePriceIdOneTime: "price_1ULPQfCgqolNE5ECollc9mYc",
   },
   {
     id: "creator",
     name: "Creator",
     priceCents: 2900,
-    credits: 200,
+    credits: 2000,
     popular: true,
     features: [
-      "~200 images or ~40 videos",
+      "~2,000 images or ~25 videos a month",
       "Character reference uploads",
-      "Cinematic camera control",
       "Priority queue",
     ],
+    stripePriceIdMonthly: "price_1ULPQfCgqolNE5ECZ56UMTKC",
+    stripePriceIdOneTime: "price_1ULPQfCgqolNE5ECdCiwSCcC",
   },
   {
     id: "studio",
     name: "Studio",
     priceCents: 7900,
-    credits: 600,
+    credits: 5600,
     popular: false,
     features: [
-      "~600 images or ~120 videos",
+      "~5,600 images or ~70 videos a month",
       "Character reference uploads",
-      "Cinematic camera control",
       "Priority queue",
       "Multi-scene storyboards with automatic stitching",
     ],
+    stripePriceIdMonthly: "price_1ULPQgCgqolNE5ECjQHD9KTW",
+    stripePriceIdOneTime: "price_1ULPQgCgqolNE5ECbEl27aIc",
   },
 ];
 

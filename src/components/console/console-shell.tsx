@@ -229,7 +229,7 @@ export function ConsoleShell({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex flex-1 flex-col lg:flex-row">
+    <div className="flex h-dvh flex-col overflow-hidden lg:flex-row">
       {/* Mobile top bar - hidden at lg: and up, where the sidebar is always visible */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
         <Link href="/" className="font-display text-lg font-semibold tracking-tight">

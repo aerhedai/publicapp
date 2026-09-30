@@ -97,41 +97,45 @@ export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   }
 
   return (
-    <>
-      <CreationsTabs
-        jobs={jobs}
-        extraTabs={[
-          {
-            key: "motion-library",
-            label: "Motion Library",
-            icon: (
-              <path
-                d="M4 5h16v14H4V5zM4 10h16M9 5v14"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ),
-          },
-          {
-            key: "templates",
-            label: "Templates",
-            icon: (
-              <path
-                d="M4 5h16v14H4V5zM4 10h16"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ),
-          },
-        ]}
-        greeting="Want to describe a video?"
-      />
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <CreationsTabs
+          jobs={jobs}
+          extraTabs={[
+            {
+              key: "motion-library",
+              label: "Motion Library",
+              icon: (
+                <path
+                  d="M4 5h16v14H4V5zM4 10h16M9 5v14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ),
+            },
+            {
+              key: "templates",
+              label: "Templates",
+              icon: (
+                <path
+                  d="M4 5h16v14H4V5zM4 10h16"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ),
+            },
+          ]}
+          greeting="Want to describe a video?"
+        />
+      </div>
 
-      <div className="px-8 pb-8">
+      {/* Fixed, not part of the scrolling content above - stays on screen
+          regardless of how far the Creations grid is scrolled. */}
+      <div className="shrink-0 border-t border-border bg-background px-8 py-4">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
           <ToolSelector subModes={SUB_MODES} activeSubMode={subMode} onSubModeChange={setSubMode} />
 
@@ -155,6 +159,6 @@ export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

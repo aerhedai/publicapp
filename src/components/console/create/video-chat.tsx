@@ -61,6 +61,7 @@ async function pollJobUntilDone(jobId: string, timeoutMs = 5 * 60 * 1000): Promi
 export function VideoChat({
   dispatchOverride,
   onDispatched,
+  onJobCreated,
   referencesPanel,
 }: {
   // When provided, called instead of POSTing to /api/jobs directly - used by
@@ -71,6 +72,12 @@ export function VideoChat({
   // page passes neither prop and keeps today's behavior exactly.
   dispatchOverride?: (params: { scene: PublicVideoScene; characterRefs: Record<string, string> }) => Promise<void>;
   onDispatched?: () => void;
+  // Called with the freshly-created job right after a non-override dispatch
+  // succeeds, so the Tools > Video page can show its loading tile in the
+  // Creations grid immediately (src/lib/use-live-jobs.ts) - never rendered
+  // here, this chat stays exactly as it was regardless of what happens to
+  // the job afterward.
+  onJobCreated?: (job: { id: string; status: string }) => void;
   // Rendered inside the same bordered textarea box, in a grid-cols-[auto_1fr]
   // layout matching the image tool's format exactly (see video-tool-client.tsx,
   // which owns the actual upload/registration state) - the whole reason this
@@ -241,6 +248,8 @@ export function VideoChat({
           const body = await res.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? "Couldn't start that generation");
         }
+        const { job } = await res.json();
+        onJobCreated?.(job);
       }
       setDispatched(true);
       setReadyState(null);

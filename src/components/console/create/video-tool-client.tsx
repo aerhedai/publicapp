@@ -6,7 +6,7 @@ import { ToolSelector, type SubMode } from "./tool-selector";
 import { ComingSoon, ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
 import { VideoChat } from "./video-chat";
 import { registerCharacterReference } from "@/lib/upload-file";
-import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
+import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
 
 const SUB_MODES: SubMode[] = [
   {
@@ -68,18 +68,11 @@ const SUB_MODES: SubMode[] = [
 // repos don't share a build.
 const MAX_REFERENCES = 9;
 
-interface JobRow {
-  id: string;
-  status: keyof typeof JOB_STATUS_CONFIG;
-  createdAt: Date;
-  type?: "image" | "video" | "stitch";
-  outputStorageKey?: string | null;
-}
-
-export function VideoToolClient({ jobs }: { jobs: JobRow[] }) {
+export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const [subMode, setSubMode] = useState("create");
   const [references, setReferences] = useState<ReferenceSlot[]>([]);
   const registeredIds = useRef(new Set<string>());
+  const { jobs, addOptimistic } = useLiveJobs(initialJobs, "video");
 
   // Upfront character-reference upload, matching the image tool's format -
   // registers each upload as a named character_reference the moment it
@@ -144,6 +137,7 @@ export function VideoToolClient({ jobs }: { jobs: JobRow[] }) {
 
           {subMode === "create" ? (
             <VideoChat
+              onJobCreated={addOptimistic}
               referencesPanel={
                 <ReferenceUploadPanel
                   subtitle="Use images as character references"

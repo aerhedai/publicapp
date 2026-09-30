@@ -80,6 +80,7 @@ export function CreationsTabs({
             <div className="grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3">
               {jobs.map((job) => {
                 const config = JOB_STATUS_CONFIG[job.status];
+                const isActive = job.status === "queued" || job.status === "warming" || job.status === "processing";
                 return (
                   <div key={job.id} className="rounded-2xl border border-border bg-card p-4">
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
@@ -90,6 +91,12 @@ export function CreationsTabs({
                     </p>
                     {job.status === "done" && job.outputStorageKey && job.type && (
                       <OutputPreview jobId={job.id} type={job.type} />
+                    )}
+                    {isActive && (
+                      <div className="mt-2 flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-lg bg-white/5">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                        {config.detail && <p className="px-3 text-center text-[10px] text-muted-foreground">{config.detail}</p>}
+                      </div>
                     )}
                   </div>
                 );

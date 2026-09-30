@@ -5,7 +5,7 @@ import { CreationsTabs } from "./creations-tabs";
 import { ToolSelector, type SubMode } from "./tool-selector";
 import { ComingSoon } from "./reference-panels";
 import { ImageCreateForm } from "./image-create-form";
-import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
+import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
 
 const SUB_MODES: SubMode[] = [
   {
@@ -36,16 +36,9 @@ const SUB_MODES: SubMode[] = [
   },
 ];
 
-interface JobRow {
-  id: string;
-  status: keyof typeof JOB_STATUS_CONFIG;
-  createdAt: Date;
-  type?: "image" | "video" | "stitch";
-  outputStorageKey?: string | null;
-}
-
-export function ImageToolClient({ jobs }: { jobs: JobRow[] }) {
+export function ImageToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const [subMode, setSubMode] = useState("create");
+  const { jobs, addOptimistic } = useLiveJobs(initialJobs, "image");
 
   return (
     <>
@@ -74,7 +67,11 @@ export function ImageToolClient({ jobs }: { jobs: JobRow[] }) {
           <ToolSelector subModes={SUB_MODES} activeSubMode={subMode} onSubModeChange={setSubMode} />
 
           <div className="rounded-3xl border border-border bg-card p-4">
-            {subMode === "create" ? <ImageCreateForm /> : <ComingSoon label="Create Artwork" />}
+            {subMode === "create" ? (
+              <ImageCreateForm onJobCreated={addOptimistic} />
+            ) : (
+              <ComingSoon label="Create Artwork" />
+            )}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects, projectClips, generationJobs } from "@/db/schema";
 import { createGenerationJob } from "@/lib/create-job";
+import { dispatchOneJob } from "@/lib/dispatch-one-job";
 import type { PublicVideoScene } from "@/lib/scene-validation";
 
 export interface SceneDraft {
@@ -78,6 +79,13 @@ export async function advanceProject(projectId: string): Promise<void> {
     if (project.status === "draft") {
       await db.update(projects).set({ status: "generating", updatedAt: new Date() }).where(eq(projects.id, projectId));
     }
+    // Same reasoning as POST /api/jobs (src/app/api/jobs/route.ts): dispatch
+    // immediately instead of leaving this "queued" for the cron's next
+    // tick to find. Row updates above happen first so dispatchOneJob's
+    // claim-guard sees a fully-consistent project/clip state regardless of
+    // how fast it resolves. Best-effort - a failure here just leaves the
+    // row "queued" for the cron to retry, same as before this existed.
+    await dispatchOneJob(result.job);
     return;
   }
 
@@ -107,6 +115,15 @@ export async function advanceProject(projectId: string): Promise<void> {
     .update(projects)
     .set({ status: "stitching", stitchJobId: result.job.id, updatedAt: new Date() })
     .where(eq(projects.id, projectId));
+
+  // Stitch jobs run synchronously inside dispatchOneJob (no RunPod round
+  // trip - see dispatch-one-job.ts's "stitch" branch), which calls
+  // applyRunpodResult -> finalizeStitchJob before this returns.
+  // finalizeStitchJob looks the project up by stitchJobId, so the update
+  // above MUST happen first - dispatching before it would have
+  // finalizeStitchJob query for a project row that doesn't have
+  // stitchJobId set yet and silently no-op.
+  await dispatchOneJob(result.job);
 }
 
 /** Thin wrapper so route handlers don't need to know advanceProject's

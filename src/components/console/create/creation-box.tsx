@@ -75,9 +75,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
       </div>
 
       {mode === "image" ? (
-        <div className="rounded-3xl border border-border bg-card p-4">
-          <ImageCreateForm />
-        </div>
+        <ImageCreateForm />
       ) : (
         <VideoChat
           referencesPanel={

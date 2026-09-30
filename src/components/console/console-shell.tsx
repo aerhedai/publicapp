@@ -194,7 +194,7 @@ function SidebarContent({
 
       {!collapsed && (
         <Link
-          href="/console/account/pricing"
+          href="/console/account/plan"
           className="mb-3 flex items-center justify-between rounded-xl bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <span className="flex items-center gap-1.5">

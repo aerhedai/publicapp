@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ReferenceUploadPanel, makeEmptySlot, type ReferenceSlot } from "./reference-panels";
+import { ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
 import { ImageSettingsPopover } from "./settings-popover";
 import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from "./types";
 import { computeImageDimensions } from "@/lib/pixel-presets";
@@ -91,9 +91,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
 
   return (
     <div className="flex flex-col gap-3">
-      {references.length > 0 && (
-        <ReferenceUploadPanel title="" slots={references} onChange={setReferences} maxSlots={MAX_REFERENCES} />
-      )}
+      <ReferenceUploadPanel title="" slots={references} onChange={setReferences} maxSlots={MAX_REFERENCES} />
 
       <textarea
         rows={2}
@@ -107,15 +105,6 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {references.length === 0 && (
-            <button
-              type="button"
-              onClick={() => setReferences([makeEmptySlot(crypto.randomUUID(), "Reference 1")])}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
-            >
-              + Reference
-            </button>
-          )}
           <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md">Flux.2 Klein</span>
 
           <div className="relative" ref={popoverRef}>

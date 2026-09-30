@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 // Folder-navigator style: "/console" -> "Home", "/console/tools/image" ->
-// "Tools > Image", "/console/account/profile" -> "Account > Profile".
+// "Tools > Image", "/console/account/plan" -> "Account > Plan".
 function segmentLabel(segment: string): string {
   return segment.charAt(0).toUpperCase() + segment.slice(1);
 }

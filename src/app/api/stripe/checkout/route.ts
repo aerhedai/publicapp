@@ -45,8 +45,8 @@ export async function POST(req: Request) {
         },
       },
     ],
-    success_url: `${baseUrl}/console/account/pricing?checkout=success`,
-    cancel_url: `${baseUrl}/console/account/pricing?checkout=cancelled`,
+    success_url: `${baseUrl}/console/account/plan?checkout=success`,
+    cancel_url: `${baseUrl}/console/account/plan?checkout=cancelled`,
   });
 
   if (!session.url) {

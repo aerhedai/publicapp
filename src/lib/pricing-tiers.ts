@@ -1,6 +1,6 @@
 // Single source of truth for the 3 credit-pack tiers - previously duplicated
 // verbatim between src/components/landing/pricing.tsx and
-// src/app/console/account/pricing/page.tsx, which is exactly how "Scene
+// src/app/console/account/plan/page.tsx, which is exactly how "Scene
 // continuity chaining" ended up listed as a paid feature with nothing behind
 // it in two places at once. Both pages now import this.
 //

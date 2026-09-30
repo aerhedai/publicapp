@@ -45,9 +45,16 @@ export function useLiveJobs(initialJobs: LiveJobRow[], type: "image" | "video") 
       const res = await fetch("/api/jobs");
       if (!res.ok) return;
       const { jobs: all } = await res.json();
-      const filtered = (all as LiveJobRow[])
+      // JSON has no Date type - createdAt comes back as an ISO string here,
+      // unlike the initial server-rendered prop (RSC serialization DOES
+      // preserve real Date objects). Without this conversion,
+      // creations-tabs.tsx's job.createdAt.toLocaleDateString() throws the
+      // moment a poll tick lands - which is almost immediately after
+      // generating anything, since a fresh job is always non-terminal.
+      const filtered = (all as (Omit<LiveJobRow, "createdAt"> & { createdAt: string })[])
         .filter((j) => j.type === type)
-        .slice(0, 30);
+        .slice(0, 30)
+        .map((j) => ({ ...j, createdAt: new Date(j.createdAt) }));
       setJobs(filtered);
     }, POLL_INTERVAL_MS);
 

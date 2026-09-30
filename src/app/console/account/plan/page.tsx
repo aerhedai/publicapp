@@ -1,12 +1,26 @@
+import { auth } from "@clerk/nextjs/server";
+import { getCreditBalance } from "@/lib/credits";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
 import { PricingCheckoutButton } from "@/components/console/pricing-checkout-button";
 
-export default function PricingPlansPage() {
+export default async function PlanPage() {
+  const { userId } = await auth();
+  if (!userId) return null; // layout already redirects; belt and suspenders
+
+  const credits = await getCreditBalance(userId);
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-8 py-10">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Pricing &amp; Plans</h1>
-        <p className="mt-1 text-sm text-muted-foreground">One-time credit packs - buy more any time, no subscription.</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Plan</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          One-time credit packs - buy more any time, no subscription.
+        </p>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-6">
+        <h2 className="text-sm font-medium text-muted-foreground">Credits</h2>
+        <p className="mt-2 text-2xl font-semibold">{credits}</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-3">

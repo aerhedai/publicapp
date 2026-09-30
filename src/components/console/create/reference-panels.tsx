@@ -61,24 +61,54 @@ export function ReferenceUploadPanel({
   accept?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // null means "adding a brand new reference" - distinguished from
+  // replacing an existing slot's file. Previously `addSlot` pushed an empty
+  // placeholder box into state the instant "+" was clicked, before any file
+  // was chosen - a new box would appear, then the user had to click *that*
+  // to actually open the file picker. Now "+" opens the picker directly;
+  // the slot itself is only created once a file is actually selected.
   const pendingSlotId = useRef<string | null>(null);
+  const addingNew = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   function startUpload(slotId: string) {
     pendingSlotId.current = slotId;
+    addingNew.current = false;
+    fileInputRef.current?.click();
+  }
+
+  function startNewUpload() {
+    addingNew.current = true;
     fileInputRef.current?.click();
   }
 
   async function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    const isNew = addingNew.current;
     const slotId = pendingSlotId.current;
     e.target.value = "";
-    if (!file || !slotId) return;
+    if (!file) return;
 
     setError(null);
     const previewUrl = URL.createObjectURL(file);
-    onChange(slots.map((s) => (s.id === slotId ? { ...s, previewUrl, uploading: true } : s)));
 
+    if (isNew) {
+      const newId = crypto.randomUUID();
+      const label = `Reference ${slots.length + 1}`;
+      const withNewSlot = [...slots, { ...makeEmptySlot(newId, label), previewUrl, uploading: true }];
+      onChange(withNewSlot);
+      try {
+        const storageKey = await uploadFile(file);
+        onChange(withNewSlot.map((s) => (s.id === newId ? { ...s, storageKey, uploading: false } : s)));
+      } catch {
+        setError("Upload failed - try again.");
+        onChange(withNewSlot.filter((s) => s.id !== newId));
+      }
+      return;
+    }
+
+    if (!slotId) return;
+    onChange(slots.map((s) => (s.id === slotId ? { ...s, previewUrl, uploading: true } : s)));
     try {
       const storageKey = await uploadFile(file);
       onChange(slots.map((s) => (s.id === slotId ? { ...s, storageKey, uploading: false } : s)));
@@ -90,11 +120,6 @@ export function ReferenceUploadPanel({
 
   function removeSlot(slotId: string) {
     onChange(slots.filter((s) => s.id !== slotId));
-  }
-
-  function addSlot() {
-    const n = slots.length + 1;
-    onChange([...slots, makeEmptySlot(crypto.randomUUID(), `Reference ${n}`)]);
   }
 
   return (
@@ -150,9 +175,9 @@ export function ReferenceUploadPanel({
         {slots.length < maxSlots && (
           <button
             type="button"
-            onClick={addSlot}
+            onClick={startNewUpload}
             className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-white/20 text-muted-foreground transition-colors hover:border-white/35 hover:text-foreground"
-            title="Add another reference"
+            title="Add a reference"
           >
             <PlusIcon />
           </button>

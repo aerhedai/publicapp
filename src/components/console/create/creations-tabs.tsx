@@ -74,8 +74,14 @@ export function CreationsTabs({
         ))}
       </div>
 
+      {/* Empty state stays centered (a welcoming hero moment) - once there's
+          real content it starts flush at the top-left like a normal list,
+          not centered as one block in the middle of the page (matches how
+          Linear/Notion/Vercel's own dashboards lay out content). */}
       <div
-        className={`flex flex-1 flex-col items-center justify-center overflow-y-auto px-8 pt-10 ${contentBottomPadding ? "pb-40" : "pb-10"}`}
+        className={`flex flex-1 flex-col overflow-y-auto px-8 pt-10 ${contentBottomPadding ? "pb-64" : "pb-10"} ${
+          tab !== "creations" || jobs.length === 0 ? "items-center justify-center" : "items-start"
+        }`}
       >
         {tab === "creations" ? (
           jobs.length === 0 ? (

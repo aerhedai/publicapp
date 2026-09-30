@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
+import { OutputPreview } from "@/components/console/create/output-preview";
 
 // Named "Explore" to match the requested nav structure - in practice this
 // shows your own generation history, not a community feed (there's no
@@ -41,7 +42,7 @@ export default async function ExplorePage() {
                 <li key={job.id} className="flex flex-col gap-1 border-b border-border pb-3 text-sm last:border-0 last:pb-0">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">
-                      {job.type === "video" ? "Video" : "Image"} &middot;{" "}
+                      {job.type === "video" ? "Video" : job.type === "stitch" ? "Stitched video" : "Image"} &middot;{" "}
                       <span className="font-mono text-xs">{job.id}</span>
                     </span>
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
@@ -53,6 +54,11 @@ export default async function ExplorePage() {
                   )}
                   {job.status === "failed" && job.error && (
                     <p className="text-xs text-red-400">{job.error}</p>
+                  )}
+                  {job.status === "done" && job.outputStorageKey && (
+                    <div className="max-w-xs">
+                      <OutputPreview jobId={job.id} type={job.type === "stitch" ? "video" : job.type} />
+                    </div>
                   )}
                 </li>
               );

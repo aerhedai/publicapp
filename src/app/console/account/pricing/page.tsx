@@ -1,57 +1,18 @@
-// Same 3-tier structure as the landing page's pricing section
-// (src/components/landing/pricing.tsx) - credit costs mirror
-// src/lib/credits.ts's CREDIT_COST_BY_TYPE. Buttons are disabled here since
-// billing/plan upgrades aren't wired up yet - this is a real user already
-// signed in, so showing a working-looking "Get Started" would be dishonest.
-const TIERS = [
-  {
-    name: "Starter",
-    price: 9,
-    credits: 50,
-    popular: false,
-    features: ["~50 images or ~10 videos", "Character reference uploads", "Standard queue"],
-  },
-  {
-    name: "Creator",
-    price: 29,
-    credits: 200,
-    popular: true,
-    features: [
-      "~200 images or ~40 videos",
-      "Character reference uploads",
-      "Cinematic camera control",
-      "Priority queue",
-    ],
-  },
-  {
-    name: "Studio",
-    price: 79,
-    credits: 600,
-    popular: false,
-    features: [
-      "~600 images or ~120 videos",
-      "Character reference uploads",
-      "Cinematic camera control",
-      "Priority queue",
-      "Scene continuity chaining",
-    ],
-  },
-];
+import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { PricingCheckoutButton } from "@/components/console/pricing-checkout-button";
 
 export default function PricingPlansPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-8 py-10">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Pricing &amp; Plans</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Billing isn&apos;t wired up yet - these are the planned tiers.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">One-time credit packs - buy more any time, no subscription.</p>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-3">
-        {TIERS.map((tier) => (
+        {PRICING_TIERS.map((tier) => (
           <div
-            key={tier.name}
+            key={tier.id}
             className={
               tier.popular
                 ? "relative rounded-3xl p-[1px] [background:linear-gradient(135deg,var(--accent-from),var(--accent-to))]"
@@ -70,8 +31,7 @@ export default function PricingPlansPage() {
               )}
               <h3 className="font-display text-lg font-medium">{tier.name}</h3>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-semibold">${tier.price}</span>
-                <span className="text-sm text-muted-foreground">/mo</span>
+                <span className="text-3xl font-semibold">${(tier.priceCents / 100).toFixed(0)}</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{tier.credits} credits</p>
 
@@ -92,14 +52,7 @@ export default function PricingPlansPage() {
                 ))}
               </ul>
 
-              <button
-                type="button"
-                disabled
-                title="Billing isn't wired up yet - coming soon"
-                className="mt-6 w-full cursor-not-allowed rounded-full border border-border px-5 py-2.5 text-center text-sm font-medium text-muted-foreground"
-              >
-                Coming soon
-              </button>
+              <PricingCheckoutButton tier={tier} popular={tier.popular} />
             </div>
           </div>
         ))}

@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { generationJobs, characterReferences } from "@/db/schema";
+import { generationJobs, characterReferences, projectClips } from "@/db/schema";
 import { CREDIT_COST_BY_TYPE, confirmCredits, releaseCredits } from "@/lib/credits";
 import { releaseGlobalSlot } from "@/lib/concurrency";
+import { advanceProject, finalizeStitchJob } from "@/lib/projects";
 import type { RunpodJobStatus } from "@/lib/runpod";
 
 /**
@@ -31,6 +32,11 @@ export async function applyRunpodResult(
     const errorMessage = output?.error ?? `RunPod job ended with status ${payload.status}`;
     await releaseCredits({ jobId: job.id, userId: job.userId, estimatedCredits: cost, error: errorMessage });
     await releaseGlobalSlot();
+    if (job.type === "stitch") {
+      await finalizeStitchJob({ id: job.id, status: "failed" });
+    } else {
+      await advanceProjectForJob(job.projectClipId);
+    }
     return;
   }
 
@@ -63,4 +69,19 @@ export async function applyRunpodResult(
   }
 
   await releaseGlobalSlot();
+  if (job.type === "stitch") {
+    await finalizeStitchJob({ id: job.id, status: "done" });
+  } else {
+    await advanceProjectForJob(job.projectClipId);
+  }
+}
+
+/** Resolves a job's projectClipId to its project and advances that
+ * project's state machine - a no-op for the (most common) standalone job
+ * that isn't part of a project. */
+async function advanceProjectForJob(projectClipId: string | null): Promise<void> {
+  if (!projectClipId) return;
+  const [clip] = await db.select().from(projectClips).where(eq(projectClips.id, projectClipId));
+  if (!clip) return;
+  await advanceProject(clip.projectId);
 }

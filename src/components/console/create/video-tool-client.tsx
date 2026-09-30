@@ -66,6 +66,8 @@ interface JobRow {
   id: string;
   status: keyof typeof JOB_STATUS_CONFIG;
   createdAt: Date;
+  type?: "image" | "video" | "stitch";
+  outputStorageKey?: string | null;
 }
 
 export function VideoToolClient({ jobs }: { jobs: JobRow[] }) {

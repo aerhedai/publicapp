@@ -33,6 +33,19 @@ const TOP_ITEMS = [
       />
     ),
   },
+  {
+    href: "/console/projects",
+    label: "Projects",
+    icon: (
+      <path
+        d="M4 6h6l2 2h8v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+  },
 ];
 
 const TOOL_ITEMS = [

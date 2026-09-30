@@ -22,6 +22,7 @@ import { eq, sql } from "drizzle-orm";
 export const CREDIT_COST_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
   image: 1,
   video: 5,
+  stitch: 1, // flat placeholder, same convention as the dollar amounts in pricing-tiers.ts
 };
 
 export async function getCreditBalance(userId: string): Promise<number> {

@@ -16,6 +16,7 @@ import { applyRunpodResult } from "@/lib/apply-job-result";
 const STALE_THRESHOLD_S_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
   image: 15 * 60,
   video: 45 * 60,
+  stitch: 5 * 60, // ffmpeg concat of a few short clips is seconds of work - generous ceiling regardless
 };
 
 const BATCH_SIZE = 10;
@@ -56,6 +57,18 @@ export async function GET(req: Request) {
     if (job.settleLedgerId) {
       // Already resolved by a race with the webhook between our SELECT and now.
       results.push({ jobId: job.id, outcome: "already_settled" });
+      continue;
+    }
+
+    if (job.type === "stitch") {
+      // Never gets a runpodJobId - it doesn't dispatch to RunPod at all
+      // (src/lib/stitch.ts runs in-process). Reaching this sweep means the
+      // ffmpeg run crashed or the function was killed mid-flight without
+      // ever calling applyRunpodResult - fail it directly, no RunPod calls
+      // to make. The user re-triggers the stitch from the project UI.
+      await applyRunpodResult(job, { id: job.id, status: "FAILED", output: { error: "stitch_timed_out" } });
+      results.push({ jobId: job.id, outcome: "stitch_timed_out" });
+      console.error(`[cron/sweep-stale] stitch job ${job.id} timed out after ${Math.round(ageS)}s with no result`);
       continue;
     }
 

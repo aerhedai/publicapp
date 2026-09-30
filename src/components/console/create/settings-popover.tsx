@@ -118,9 +118,17 @@ export function ImageSettingsPopover({
 export function VideoSettingsPopover({
   settings,
   onChange,
+  compact = false,
 }: {
   settings: VideoSettings;
   onChange: (next: VideoSettings) => void;
+  // Chat-driven generation only exposes aspect ratio + duration today - the
+  // model call these two actually reach (see graph_builder.py's
+  // build_scene_graph) - resolution/audio stay hidden rather than showing
+  // controls that would silently no-op. /console's own CreationBox keeps
+  // the full popover (compact defaults false) since it's still unwired
+  // there regardless.
+  compact?: boolean;
 }) {
   return (
     <div className="w-80 rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
@@ -151,38 +159,42 @@ export function VideoSettingsPopover({
         />
       </div>
 
-      <div className="mt-5">
-        <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
-        <div className="flex flex-wrap gap-2">
-          {(["480p", "720p"] as const).map((res) => (
-            <Pill
-              key={res}
-              label={res}
-              active={settings.resolution === res}
-              onClick={() => onChange({ ...settings, resolution: res })}
-            />
-          ))}
-        </div>
-      </div>
+      {!compact && (
+        <>
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
+            <div className="flex flex-wrap gap-2">
+              {(["480p", "720p"] as const).map((res) => (
+                <Pill
+                  key={res}
+                  label={res}
+                  active={settings.resolution === res}
+                  onClick={() => onChange({ ...settings, resolution: res })}
+                />
+              ))}
+            </div>
+          </div>
 
-      <div className="mt-5 flex items-center justify-between">
-        <p className="text-xs font-medium text-zinc-400">Audio</p>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={settings.audio}
-          onClick={() => onChange({ ...settings, audio: !settings.audio })}
-          className={`relative h-6 w-11 rounded-full transition-colors ${
-            settings.audio ? "bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))]" : "bg-white/10"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-              settings.audio ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
-      </div>
+          <div className="mt-5 flex items-center justify-between">
+            <p className="text-xs font-medium text-zinc-400">Audio</p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.audio}
+              onClick={() => onChange({ ...settings, audio: !settings.audio })}
+              className={`relative h-6 w-11 rounded-full transition-colors ${
+                settings.audio ? "bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))]" : "bg-white/10"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                  settings.audio ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

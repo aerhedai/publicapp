@@ -35,6 +35,11 @@ export interface PublicVideoScene {
   action: string;
   dialogue: [];
   audio_tag: string;
+  // Consumed by graph_builder.py's build_scene_graph as a per-job override
+  // of config.ASPECT_RATIO (falls back to that default there if unset) -
+  // set here from the chat UI's video settings popover, never inferred by
+  // the LLM. "Auto" means "let the worker use its own default."
+  aspect_ratio: string;
 }
 
 export type SceneValidationResult =
@@ -115,6 +120,10 @@ export function validateVideoSceneDraft(
       action: draft.action,
       dialogue: [],
       audio_tag: draft.audioTag ?? "",
+      // Overwritten client-side from the video settings popover right
+      // before dispatch (see video-chat.tsx) - this default only matters
+      // if that step is ever skipped.
+      aspect_ratio: "Auto",
     },
     characterRefs,
   };

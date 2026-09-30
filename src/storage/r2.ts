@@ -105,6 +105,40 @@ export async function createPresignedDownload(key: string, expiresIn = 300) {
   return getSignedUrl(getClient(), command, { expiresIn });
 }
 
+/**
+ * Server-side direct download (no presigned URL round trip) - streams
+ * straight to a local file. Used by the stitch job (src/lib/stitch.ts),
+ * which runs in the same process and needs the actual bytes on disk for
+ * ffmpeg, not a URL for a browser/worker to fetch later.
+ */
+export async function downloadObjectToFile(key: string, destPath: string): Promise<void> {
+  const { pipeline } = await import("stream/promises");
+  const fs = await import("fs");
+
+  const res = await getClient().send(new GetObjectCommand({ Bucket: getBucket(), Key: key }));
+  if (!res.Body) {
+    throw new Error(`R2 object ${key} has no body`);
+  }
+  await pipeline(res.Body as unknown as NodeJS.ReadableStream, fs.createWriteStream(destPath));
+}
+
+/**
+ * Server-side direct upload (no presigned URL round trip) - the counterpart
+ * to downloadObjectToFile, for writing a locally-produced file (the stitch
+ * job's concatenated output) straight to R2.
+ */
+export async function uploadFileToR2(key: string, filePath: string, contentType: string): Promise<void> {
+  const fs = await import("fs");
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      Body: fs.createReadStream(filePath),
+      ContentType: contentType,
+    })
+  );
+}
+
 /** Throws if `key` doesn't belong to `userId` - call this before returning
  * any presigned download URL or deleting anything. */
 export function assertOwnsKey(userId: string, key: string) {

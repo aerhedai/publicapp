@@ -5,6 +5,7 @@ import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 import { CreationBox } from "@/components/console/create/creation-box";
+import { OutputPreview } from "@/components/console/create/output-preview";
 
 export default async function ConsoleHome() {
   const { userId } = await auth();
@@ -45,14 +46,19 @@ export default async function ConsoleHome() {
             {jobs.map((job) => {
               const config = JOB_STATUS_CONFIG[job.status];
               return (
-                <li key={job.id} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {job.type === "video" ? "Video" : "Image"} &middot;{" "}
-                    {new Date(job.createdAt).toLocaleDateString()}
-                  </span>
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
-                    {config.label}
-                  </span>
+                <li key={job.id} className="flex flex-col gap-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {job.type === "video" ? "Video" : job.type === "stitch" ? "Stitched video" : "Image"} &middot;{" "}
+                      {new Date(job.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
+                      {config.label}
+                    </span>
+                  </div>
+                  {job.status === "done" && job.outputStorageKey && (
+                    <OutputPreview jobId={job.id} type={job.type === "stitch" ? "video" : job.type} />
+                  )}
                 </li>
               );
             })}

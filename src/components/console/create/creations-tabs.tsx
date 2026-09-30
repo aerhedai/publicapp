@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 import { ComingSoon } from "./reference-panels";
+import { OutputPreview } from "./output-preview";
 
 interface JobRow {
   id: string;
   status: keyof typeof JOB_STATUS_CONFIG;
   createdAt: Date;
+  type?: "image" | "video" | "stitch";
+  outputStorageKey?: string | null;
 }
 
 // The top tab bar seen on every Tools page (Creations/Templates/...).
@@ -85,6 +88,9 @@ export function CreationsTabs({
                     <p className="mt-2 text-xs text-muted-foreground">
                       {job.createdAt.toLocaleDateString()}
                     </p>
+                    {job.status === "done" && job.outputStorageKey && job.type && (
+                      <OutputPreview jobId={job.id} type={job.type} />
+                    )}
                   </div>
                 );
               })}

@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicVideoScene } from "@/lib/scene-validation";
+import { VideoSettingsPopover } from "./settings-popover";
+import { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./types";
 
 interface ChatTurn {
   role: "user" | "assistant";
@@ -56,7 +58,19 @@ async function pollJobUntilDone(jobId: string, timeoutMs = 5 * 60 * 1000): Promi
   return "timeout";
 }
 
-export function VideoChat() {
+export function VideoChat({
+  dispatchOverride,
+  onDispatched,
+}: {
+  // When provided, called instead of POSTing to /api/jobs directly - used by
+  // the storyboard wrapper (src/app/console/projects/**) to save a scene
+  // onto its project clip instead of dispatching it immediately (a project's
+  // "generate" clips are dispatched one at a time, in order, by
+  // advanceProject - see src/lib/projects.ts). The standalone Tools > Video
+  // page passes neither prop and keeps today's behavior exactly.
+  dispatchOverride?: (params: { scene: PublicVideoScene; characterRefs: Record<string, string> }) => Promise<void>;
+  onDispatched?: () => void;
+} = {}) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
@@ -66,8 +80,22 @@ export function VideoChat() {
   const [busyLabel, setBusyLabel] = useState<string | null>(null); // which missing-character action is in flight
   const [dispatching, setDispatching] = useState(false);
   const [dispatched, setDispatched] = useState(false);
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>(DEFAULT_VIDEO_SETTINGS);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingUploadLabel = useRef<string | null>(null);
+  const settingsPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (settingsPopoverRef.current && !settingsPopoverRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [settingsOpen]);
 
   async function sendTurn(nextMessages: ChatTurn[]) {
     setSending(true);
@@ -88,9 +116,19 @@ export function VideoChat() {
         setMessages([...nextMessages, { role: "assistant", content: summary }]);
         setMissingState({ missing: data.missing, generateCostCredits: data.generateCostCredits });
       } else if (data.type === "ready") {
-        const summary = `Ready to generate: ${data.scene.action} (${data.scene.duration}s, ${data.estimatedCredits} credits).`;
+        // The LLM never decides duration/aspect ratio - these two are the
+        // only settings the worker actually reads per-job (graph_builder.py's
+        // build_scene_graph), so the popover's current values always
+        // override whatever the draft defaulted to, right before the user
+        // ever sees a number.
+        const scene: PublicVideoScene = {
+          ...data.scene,
+          duration: videoSettings.durationSeconds,
+          aspect_ratio: videoSettings.aspectRatio,
+        };
+        const summary = `Ready to generate: ${scene.action} (${scene.duration}s, ${data.estimatedCredits} credits).`;
         setMessages([...nextMessages, { role: "assistant", content: summary }]);
-        setReadyState({ scene: data.scene, characterRefs: data.characterRefs, estimatedCredits: data.estimatedCredits });
+        setReadyState({ scene, characterRefs: data.characterRefs, estimatedCredits: data.estimatedCredits });
       } else {
         setMessages([...nextMessages, { role: "assistant", content: data.message }]);
       }
@@ -180,22 +218,30 @@ export function VideoChat() {
     if (!readyState) return;
     setDispatching(true);
     try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "video",
-          input: { scene: readyState.scene, characterRefs: readyState.characterRefs },
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? body.error ?? "Couldn't start that generation");
+      if (dispatchOverride) {
+        await dispatchOverride({ scene: readyState.scene, characterRefs: readyState.characterRefs });
+      } else {
+        const res = await fetch("/api/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "video",
+            input: { scene: readyState.scene, characterRefs: readyState.characterRefs },
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message ?? body.error ?? "Couldn't start that generation");
+        }
       }
       setDispatched(true);
       setReadyState(null);
       setMessages((prev) => [...prev, { role: "assistant", content: "Queued - it'll show up in Creations once it's ready." }]);
-      router.refresh();
+      if (onDispatched) {
+        onDispatched();
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setMessages((prev) => [...prev, { role: "assistant", content: (err as Error).message }]);
     } finally {
@@ -276,7 +322,31 @@ export function VideoChat() {
           placeholder={dispatched ? "Describe another video" : "Describe your video"}
           className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
         />
-        <div className="mt-3 flex justify-end border-t border-border pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+          <div className="relative" ref={settingsPopoverRef}>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
+            >
+              {`${videoSettings.aspectRatio} · ${videoSettings.durationSeconds}s`}
+              <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                <path
+                  d={settingsOpen ? "M6 12l4-4 4 4" : "M6 8l4 4 4-4"}
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            {settingsOpen && (
+              <div className="absolute bottom-full left-0 z-20 mb-2">
+                <VideoSettingsPopover settings={videoSettings} onChange={setVideoSettings} compact />
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             disabled={!input.trim() || sending}

@@ -58,9 +58,10 @@ export function VoiceToolClient({ jobs }: { jobs: JobRow[] }) {
   const [subMode, setSubMode] = useState("voiceover");
 
   return (
-    <>
+    <div className="relative h-full">
       <CreationsTabs
         jobs={jobs}
+        contentBottomPadding
         extraTabs={[
           {
             key: "voices",
@@ -79,69 +80,71 @@ export function VoiceToolClient({ jobs }: { jobs: JobRow[] }) {
         greeting="Want to describe a voiceover?"
       />
 
-      <div className="px-8 pb-8">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+      {/* Floating, not a docked panel - see image-tool-client.tsx's own
+          note for the reasoning. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-8 pb-4">
+        <div className="pointer-events-auto flex w-full max-w-4xl flex-col gap-3">
           <ToolSelector subModes={SUB_MODES} activeSubMode={subMode} onSubModeChange={setSubMode} />
 
-          <div className="rounded-3xl border border-border bg-card p-4">
-            {subMode === "voiceover" ? (
-              <>
-                <textarea
-                  rows={4}
-                  placeholder="Describe your voiceover"
-                  className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-                />
+          {subMode === "voiceover" ? (
+            <div className="flex flex-col gap-3">
+              <textarea
+                rows={2}
+                placeholder="Describe your voiceover"
+                className="w-full resize-none rounded-2xl border border-white/10 bg-card/70 px-4 py-3 text-sm placeholder:text-muted-foreground backdrop-blur-md focus:outline-none"
+              />
 
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
-                    >
-                      Bella
-                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-                        <path
-                          d="M6 8l4 4 4-4"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
-                    >
-                      English
-                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-                        <path
-                          d="M6 8l4 4 4-4"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    disabled
-                    title="Voice generation isn't wired up yet - coming soon"
-                    className="cursor-not-allowed rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white opacity-50"
+                    className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
                   >
-                    Generate
+                    Bella
+                    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                      <path
+                        d="M6 8l4 4 4-4"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
+                  >
+                    English
+                    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                      <path
+                        d="M6 8l4 4 4-4"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
                 </div>
-              </>
-            ) : (
+
+                <button
+                  type="button"
+                  disabled
+                  title="Voice generation isn't wired up yet - coming soon"
+                  className="cursor-not-allowed rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white opacity-50"
+                >
+                  Generate
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-border bg-card p-4">
               <ComingSoon label={SUB_MODES.find((s) => s.key === subMode)?.label ?? subMode} />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
+import { ReferenceUploadPanel, makeEmptySlot, type ReferenceSlot } from "./reference-panels";
 import { ImageSettingsPopover } from "./settings-popover";
 import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from "./types";
 import { computeImageDimensions } from "@/lib/pixel-presets";
@@ -90,36 +90,39 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
   }
 
   return (
-    <>
-      <div className="grid grid-cols-[auto_1fr] gap-4">
-        <div className="border-r border-border pr-4">
-          <ReferenceUploadPanel
-            subtitle="Use images as references"
-            slots={references}
-            onChange={setReferences}
-            maxSlots={MAX_REFERENCES}
-          />
-        </div>
-        <textarea
-          rows={4}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your image"
-          className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-        />
-      </div>
+    <div className="flex flex-col gap-3">
+      {references.length > 0 && (
+        <ReferenceUploadPanel title="" slots={references} onChange={setReferences} maxSlots={MAX_REFERENCES} />
+      )}
 
-      {errorMessage && <p className="mt-2 text-xs text-red-400">{errorMessage}</p>}
+      <textarea
+        rows={2}
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Describe your image"
+        className="w-full resize-none rounded-2xl border border-white/10 bg-card/70 px-4 py-3 text-sm placeholder:text-muted-foreground backdrop-blur-md focus:outline-none"
+      />
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+      {errorMessage && <p className="text-xs text-red-400">{errorMessage}</p>}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300">Flux.2 Klein</span>
+          {references.length === 0 && (
+            <button
+              type="button"
+              onClick={() => setReferences([makeEmptySlot(crypto.randomUUID(), "Reference 1")])}
+              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
+            >
+              + Reference
+            </button>
+          )}
+          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md">Flux.2 Klein</span>
 
           <div className="relative" ref={popoverRef}>
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
             >
               {`${settings.aspectRatio} · ${settings.outputs} Image${settings.outputs > 1 ? "s" : ""} · ${settings.resolution}`}
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
@@ -149,6 +152,6 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
           {dispatching ? "Starting..." : "Generate"}
         </button>
       </div>
-    </>
+    </div>
   );
 }

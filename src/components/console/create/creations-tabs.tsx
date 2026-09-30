@@ -22,16 +22,23 @@ export function CreationsTabs({
   jobs,
   extraTabs,
   greeting,
+  contentBottomPadding,
 }: {
   jobs: JobRow[];
   extraTabs: { key: string; label: string; icon: React.ReactNode }[];
   greeting: string;
+  // Extra bottom padding on the scrollable content, for pages that float a
+  // borderless compose area over the bottom of the grid (image-tool-client.tsx
+  // etc.) - without it the last row of tiles would sit hidden underneath it.
+  contentBottomPadding?: boolean;
 }) {
   const [tab, setTab] = useState("creations");
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-8 py-3">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Static - shrink-0, not part of the scrolling region below, so it
+          never moves regardless of how far the grid is scrolled. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-8 py-3">
         <button
           type="button"
           onClick={() => setTab("creations")}
@@ -67,7 +74,9 @@ export function CreationsTabs({
         ))}
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-10">
+      <div
+        className={`flex flex-1 flex-col items-center justify-center overflow-y-auto px-8 pt-10 ${contentBottomPadding ? "pb-40" : "pb-10"}`}
+      >
         {tab === "creations" ? (
           jobs.length === 0 ? (
             <div className="text-center">

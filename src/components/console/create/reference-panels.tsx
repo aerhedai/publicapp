@@ -99,7 +99,7 @@ export function ReferenceUploadPanel({
 
   return (
     <div>
-      <p className="text-sm font-medium">{title}</p>
+      {title && <p className="text-sm font-medium">{title}</p>}
       {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
       <input ref={fileInputRef} type="file" accept={accept} className="hidden" onChange={handleFileChosen} />
       <div className="mt-3 flex flex-wrap gap-2">

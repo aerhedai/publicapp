@@ -325,47 +325,30 @@ export function VideoChat({
         </div>
       )}
 
-      <div className="rounded-3xl border border-border bg-card p-4">
-        {referencesPanel ? (
-          <div className="grid grid-cols-[auto_1fr] gap-4">
-            <div className="border-r border-border pr-4">{referencesPanel}</div>
-            <textarea
-              rows={4}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder={dispatched ? "Describe another video" : "Describe your video"}
-              className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-            />
-          </div>
-        ) : (
-          <textarea
-            rows={4}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder={dispatched ? "Describe another video" : "Describe your video"}
-            className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
-          />
-        )}
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300">MiniMax H3</span>
+      {referencesPanel}
+
+      <textarea
+        rows={2}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
+        placeholder={dispatched ? "Describe another video" : "Describe your video"}
+        className="w-full resize-none rounded-2xl border border-white/10 bg-card/70 px-4 py-3 text-sm placeholder:text-muted-foreground backdrop-blur-md focus:outline-none"
+      />
+
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md">MiniMax H3</span>
           <div className="relative" ref={settingsPopoverRef}>
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
             >
               {`${videoSettings.aspectRatio} · ${videoSettings.durationSeconds}s · ${videoSettings.resolution}`}
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
@@ -384,17 +367,16 @@ export function VideoChat({
               </div>
             )}
           </div>
-          </div>
-
-          <button
-            type="button"
-            disabled={!input.trim() || sending}
-            onClick={handleSend}
-            className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {sending ? "Thinking..." : "Send"}
-          </button>
         </div>
+
+        <button
+          type="button"
+          disabled={!input.trim() || sending}
+          onClick={handleSend}
+          className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {sending ? "Thinking..." : "Send"}
+        </button>
       </div>
     </div>
   );

@@ -44,6 +44,35 @@ function getBucket(): string {
   return process.env.R2_BUCKET_NAME;
 }
 
+// The RunPod worker endpoints are shared across Preview and Production (one
+// image worker, one video worker - not a per-environment pair), but their R2
+// *upload* credentials are fixed at the endpoint level. Passed through in the
+// job's dispatch payload (see src/lib/runpod.ts's buildWorkflowPayload) so a
+// worker writes its output to whichever bucket actually matches the app
+// environment that dispatched it, instead of always writing to whatever
+// bucket happens to be baked into the endpoint's own config - confirmed live
+// as a real bug (Preview jobs succeeded, but generated output 404'd when
+// Preview tried to read it back, because the worker had written it to
+// Production's bucket instead).
+export function getR2CredentialsForWorker(): {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+} {
+  for (const key of REQUIRED_ENV) {
+    if (!process.env[key]) {
+      throw new Error(`${key} is not set - copy .env.example to .env.local and fill it in`);
+    }
+  }
+  return {
+    accountId: process.env.R2_ACCOUNT_ID!,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    bucketName: process.env.R2_BUCKET_NAME!,
+  };
+}
+
 // Only these are accepted for user uploads. Reject everything else server-side -
 // never trust a client-supplied Content-Type without validating it against a list.
 const ALLOWED_UPLOAD_TYPES = new Set([

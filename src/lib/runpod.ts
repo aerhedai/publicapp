@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { assertOwnsKey, createPresignedDownload } from "@/storage/r2";
+import { assertOwnsKey, createPresignedDownload, getR2CredentialsForWorker } from "@/storage/r2";
 
 // Lazy-init discipline, same reasoning as src/db/client.ts/src/storage/r2.ts -
 // env vars read inside each function, never at module-import time (this broke
@@ -107,10 +107,16 @@ export async function buildWorkflowPayload(params: {
 }): Promise<{ input: Record<string, unknown> }> {
   const { userId, type, input } = params;
 
+  // Passed through so the worker uploads its output to whichever bucket
+  // actually matches the environment that dispatched this job, not whatever
+  // bucket is baked into the endpoint's own fixed config - see
+  // getR2CredentialsForWorker's own comment for why this exists.
+  const r2 = getR2CredentialsForWorker();
+
   if (type === "video") {
     const videoInput = input as VideoJobInput;
     const characterRefs = await presignCharacterRefs(userId, videoInput.characterRefs);
-    return { input: { userId, scene: videoInput.scene, characterRefs } };
+    return { input: { userId, scene: videoInput.scene, characterRefs, r2 } };
   }
 
   const imageInput = input as ImageJobInput;
@@ -129,6 +135,7 @@ export async function buildWorkflowPayload(params: {
       styleRef,
       width: imageInput.width,
       height: imageInput.height,
+      r2,
     },
   };
 }

@@ -102,7 +102,13 @@ export function CreationsTabs({
                       {config.label}
                     </span>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {job.createdAt.toLocaleDateString()}
+                      {/* Explicit locale + timeZone: toLocaleDateString() with
+                          no args uses the runtime's default locale, which
+                          differs between the server (Node/ICU default) and
+                          the visitor's browser - same Date, different
+                          formatted string, a real hydration-mismatch
+                          (React #418) confirmed live. */}
+                      {job.createdAt.toLocaleDateString("en-US", { timeZone: "UTC" })}
                     </p>
                     {job.status === "done" && job.outputStorageKey && job.type && (
                       <OutputPreview jobId={job.id} type={job.type} />

@@ -17,21 +17,28 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com`,
+  // vercel.live: Vercel's own Preview-deployment toolbar (live feedback
+  // widget), auto-injected on every Preview deploy - not something this app
+  // opted into, but blocking it just produces a console CSP error for no
+  // benefit since it's Vercel's own trusted script.
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://vercel.live`,
   // Clerk's bot-detection spins up a blob: Web Worker. Without this,
   // worker-src falls back to script-src, which doesn't allow blob: -
   // confirmed via a real "Creating a worker from 'blob:...' violates CSP" error.
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://img.clerk.com",
+  // blob: - local <img>/<video> previews via URL.createObjectURL() before a
+  // reference/upload has finished (src/components/console/create/reference-panels.tsx)
+  // are blocked by the CSP layer without this, confirmed live.
+  "img-src 'self' data: blob: https://img.clerk.com",
   "font-src 'self' data:",
   // Presigned uploads (src/storage/r2.ts) are PUT directly from the browser
   // to R2, by design - the server never proxies file bytes. Without this,
   // the browser blocks the request at the CSP layer before it even reaches
   // R2's own CORS check (confirmed live - a real "Failed to fetch" that
   // looked like a CORS bug was actually this).
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com",
-  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
+  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com https://vercel.live wss://ws-us3.pusher.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://vercel.live",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

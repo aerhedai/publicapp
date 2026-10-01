@@ -137,7 +137,7 @@ function SidebarContent({
       <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-2`}>
         {!collapsed && (
           <Link href="/" className="font-display text-lg font-semibold tracking-tight">
-            VidGen
+            Curealo
           </Link>
         )}
         {onToggleCollapse && (
@@ -214,7 +214,7 @@ export function ConsoleShell({
       {/* Mobile top bar - hidden at lg: and up, where the sidebar is always visible */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
         <Link href="/" className="font-display text-lg font-semibold tracking-tight">
-          VidGen
+          Curealo
         </Link>
         <button
           type="button"

@@ -57,7 +57,7 @@ export function CookieBanner() {
       <div className="flex max-w-xl flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-2xl sm:flex-row sm:items-center">
         <p className="text-xs text-muted-foreground">
           We use strictly necessary cookies for sign-in and checkout - nothing for tracking or
-          advertising. By using VidGen you agree to this.
+          advertising. By using Curealo you agree to this.
         </p>
         <button
           type="button"

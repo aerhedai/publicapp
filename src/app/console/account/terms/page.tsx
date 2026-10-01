@@ -13,7 +13,7 @@ const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "1. The service",
     paragraphs: [
-      "VidGen (\"we\", \"us\") lets you generate short video clips and standalone images from text descriptions, optionally anchored to reference images or audio clips you upload. These Terms govern your use of the app at this domain and any related API.",
+      "Curealo (\"we\", \"us\") lets you generate short video clips and standalone images from text descriptions, optionally anchored to reference images or audio clips you upload. These Terms govern your use of the app at this domain and any related API.",
       "You must be at least 18 years old to create an account.",
     ],
   },

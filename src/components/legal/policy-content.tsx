@@ -28,16 +28,19 @@ export const LAST_UPDATED = "October 1, 2026";
 // any commercial website given England and Wales governing law, separate
 // from and in addition to the Terms/Privacy content itself. Confirmed
 // 2026-10-01: not VAT-registered (below the ~£90k/year threshold - genuinely
-// not applicable, not a gap) and not yet incorporated (operating as a sole
-// trader, no Companies House number - also genuinely not applicable yet).
-// The geographic address does NOT have a "not applicable" option under this
-// regulation even for a sole trader with no company - still outstanding,
-// flagged explicitly below rather than silently omitted or faked.
+// not applicable, not a gap), not yet incorporated (operating as a sole
+// trader - a real LTD is planned eventually, not a gap to fix now), real
+// name given (Rohan Patel) - the one piece still deliberately deferred is
+// the geographic address (a virtual-office address or the eventual LTD's
+// registered office will fill this in), accepted as a real, understood
+// risk for now rather than an oversight - see the conversation this was
+// decided in for the actual risk assessment (low but non-zero for a small
+// pre-revenue app; revisit before meaningful user/payment volume).
 export const BUSINESS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "Who operates this service",
     paragraphs: [
-      "Curealo is operated as a sole trader (not an incorporated company) based in England. A full registered/trading address will be published here shortly - in the meantime, contact support@curealo.com for any formal correspondence.",
+      "Curealo is operated by Rohan Patel as a sole trader (not yet an incorporated company), based in England. A full registered/trading address will be published here once one is set up - in the meantime, contact support@curealo.com for any formal correspondence.",
       "Not VAT-registered (below the UK VAT registration threshold).",
       "Contact: support@curealo.com.",
     ],

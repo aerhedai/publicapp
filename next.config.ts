@@ -12,6 +12,14 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 // (a real "CAPTCHA failed to load" surfaced from omitting it). If you add
 // other third-party embeds later, extend this rather than loosening it
 // wholesale.
+//
+// *.clerk.accounts.dev/*.clerk.com only ever covered the shared dev
+// instance - the real Production Clerk instance serves its Frontend API and
+// Accounts Portal from this app's own subdomains instead (clerk.curealo.com,
+// accounts.curealo.com, see the domain's cname_targets from Clerk's own API),
+// which were missing here entirely. That's a real, confirmed-live bug, not
+// a precaution: login silently did nothing on Production because the
+// browser was CSP-blocking Clerk's script/API calls to its own domain.
 // React/Next.js dev mode uses eval() for stack-trace reconstruction and Fast
 // Refresh - never in production (React's own guarantee). Keep 'unsafe-eval'
 // out of the production CSP entirely rather than allowing it everywhere;
@@ -25,7 +33,7 @@ const csp = [
   // widget), auto-injected on every Preview deploy - not something this app
   // opted into, but blocking it just produces a console CSP error for no
   // benefit since it's Vercel's own trusted script.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://vercel.live`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://*.clerk.accounts.dev https://*.clerk.com https://clerk.curealo.com https://accounts.curealo.com https://challenges.cloudflare.com https://vercel.live`,
   // Clerk's bot-detection spins up a blob: Web Worker. Without this,
   // worker-src falls back to script-src, which doesn't allow blob: -
   // confirmed via a real "Creating a worker from 'blob:...' violates CSP" error.
@@ -51,8 +59,8 @@ const csp = [
   // the browser blocks the request at the CSP layer before it even reaches
   // R2's own CORS check (confirmed live - a real "Failed to fetch" that
   // looked like a CORS bug was actually this).
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com https://vercel.live wss://ws-us3.pusher.com",
-  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://vercel.live",
+  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.curealo.com https://accounts.curealo.com https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com https://vercel.live wss://ws-us3.pusher.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.curealo.com https://accounts.curealo.com https://challenges.cloudflare.com https://vercel.live",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

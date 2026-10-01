@@ -10,7 +10,13 @@ import type { Mode } from "./types";
 // (ImageCreateForm, VideoChat) rather than a parallel lookalike copy, so
 // switching modes here really does "pop up the same exact thing" as
 // visiting Tools > Image / Tools > Video directly.
-export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
+export function CreationBox({
+  initialMode = "image",
+  onJobCreated,
+}: {
+  initialMode?: Mode;
+  onJobCreated?: (job: { id: string; status: string; type?: "image" | "video" }) => void;
+}) {
   const [mode, setMode] = useState<Mode>(initialMode);
 
   return (
@@ -20,7 +26,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
           type="button"
           onClick={() => setMode("image")}
           aria-label="Image mode"
-          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-150 ease-out active:scale-[0.95] ${
             mode === "image" ? "bg-white/15 text-white" : "text-muted-foreground hover:bg-white/5"
           }`}
         >
@@ -38,7 +44,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
           type="button"
           onClick={() => setMode("video")}
           aria-label="Video mode"
-          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-150 ease-out active:scale-[0.95] ${
             mode === "video" ? "bg-white/15 text-white" : "text-muted-foreground hover:bg-white/5"
           }`}
         >
@@ -54,7 +60,11 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
         </button>
       </div>
 
-      {mode === "image" ? <ImageCreateForm /> : <VideoChat />}
+      {mode === "image" ? (
+        <ImageCreateForm onJobCreated={(job) => onJobCreated?.({ ...job, type: "image" })} />
+      ) : (
+        <VideoChat onJobCreated={(job) => onJobCreated?.({ ...job, type: "video" })} />
+      )}
     </div>
   );
 }

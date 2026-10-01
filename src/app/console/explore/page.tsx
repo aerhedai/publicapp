@@ -2,8 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
-import { OutputPreview } from "@/components/console/create/output-preview";
+import { ExploreClient } from "@/components/console/create/explore-client";
 
 // Named "Explore" to match the requested nav structure - in practice this
 // shows your own generation history, not a community feed (there's no
@@ -14,58 +13,17 @@ export default async function ExplorePage() {
   if (!userId) return null; // layout already redirects; belt and suspenders
 
   const jobs = await db
-    .select()
+    .select({
+      id: generationJobs.id,
+      status: generationJobs.status,
+      createdAt: generationJobs.createdAt,
+      type: generationJobs.type,
+      outputStorageKey: generationJobs.outputStorageKey,
+    })
     .from(generationJobs)
     .where(eq(generationJobs.userId, userId))
     .orderBy(desc(generationJobs.createdAt))
     .limit(50);
 
-  return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-8 py-10">
-      <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Explore</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Everything you&apos;ve generated.
-        </p>
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-6">
-        {jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No jobs yet. This is where the video-generation flow will plug in.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {jobs.map((job) => {
-              const config = JOB_STATUS_CONFIG[job.status];
-              return (
-                <li key={job.id} className="flex flex-col gap-1 border-b border-border pb-3 text-sm last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {job.type === "video" ? "Video" : job.type === "stitch" ? "Stitched video" : "Image"} &middot;{" "}
-                      <span className="font-mono text-xs">{job.id}</span>
-                    </span>
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
-                      {config.label}
-                    </span>
-                  </div>
-                  {job.status === "warming" && config.detail && (
-                    <p className="text-xs text-muted-foreground">{config.detail}</p>
-                  )}
-                  {job.status === "failed" && job.error && (
-                    <p className="text-xs text-red-400">{job.error}</p>
-                  )}
-                  {job.status === "done" && job.outputStorageKey && (
-                    <div className="max-w-xs">
-                      <OutputPreview jobId={job.id} type={job.type === "stitch" ? "video" : job.type} />
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
+  return <ExploreClient jobs={jobs} />;
 }

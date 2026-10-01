@@ -134,7 +134,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
           type="button"
           onClick={() => setPickerOpen(true)}
           disabled={references.length >= MAX_REFERENCES}
-          className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-white/35 hover:text-foreground disabled:opacity-50"
+          className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/15 bg-white/12 text-muted-foreground backdrop-blur-md transition-colors duration-150 ease-out hover:bg-white/20 hover:text-foreground disabled:opacity-50 active:scale-[0.97]"
           title="Add reference images"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
@@ -150,7 +150,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
             <button
               type="button"
               onClick={() => setReferences((prev) => prev.filter((x) => x.storageKey !== r.storageKey))}
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700"
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800 text-white transition-colors duration-150 ease-out hover:bg-neutral-700 active:scale-[0.95]"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3">
                 <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -173,13 +173,13 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md">Flux.2 Klein</span>
+          <span className="rounded-full bg-white/12 px-3 py-1.5 text-sm text-zinc-200 backdrop-blur-md">Flux.2 Klein</span>
 
           <div className="relative" ref={popoverRef}>
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 text-sm text-zinc-200 backdrop-blur-md transition-colors duration-150 ease-out hover:bg-white/20 active:scale-[0.97]"
             >
               {`${settings.aspectRatio} · ${settings.outputs} Image${settings.outputs > 1 ? "s" : ""} · ${settings.resolution}`}
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
@@ -193,7 +193,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
               </svg>
             </button>
             {settingsOpen && (
-              <div className="absolute bottom-full right-0 z-20 mb-2">
+              <div className="animate-popover-in absolute bottom-full right-0 z-20 mb-2">
                 <ImageSettingsPopover settings={settings} onChange={setSettings} />
               </div>
             )}
@@ -204,7 +204,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
           type="button"
           disabled={!canGenerate}
           onClick={() => void handleGenerate()}
-          className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white transition-transform duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97]"
         >
           {dispatching ? "Starting..." : "Generate"}
         </button>

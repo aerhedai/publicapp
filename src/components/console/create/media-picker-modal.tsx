@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { uploadFile, registerCharacterReference } from "@/lib/upload-file";
+import { useJobOutputUrl } from "@/lib/use-job-output-url";
 
 export interface PickedMedia {
   type: "image" | "audio";
@@ -25,20 +26,7 @@ interface LibraryRow {
 }
 
 function CreationThumb({ job, selected, onPick }: { job: JobRow; selected: boolean; onPick: (storageKey: string, url: string) => void }) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/jobs/${job.id}/output`)
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => {
-        if (!cancelled) setUrl(data.url);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [job.id]);
+  const { url } = useJobOutputUrl(job.id);
 
   if (!url) return <div className="aspect-square w-full animate-pulse rounded-xl bg-white/5" />;
 
@@ -46,7 +34,7 @@ function CreationThumb({ job, selected, onPick }: { job: JobRow; selected: boole
     <button
       type="button"
       onClick={() => onPick(job.outputStorageKey as string, url)}
-      className={`relative aspect-square w-full overflow-hidden rounded-xl border ${
+      className={`relative aspect-square w-full overflow-hidden rounded-xl border transition-colors duration-150 ease-out ${
         selected ? "border-white" : "border-transparent hover:border-white/30"
       }`}
     >
@@ -96,9 +84,9 @@ export function MediaPickerModal({
 
   useEffect(() => {
     if (!open) return;
-    fetch("/api/jobs")
+    fetch("/api/jobs?type=image&limit=50")
       .then((res) => (res.ok ? res.json() : { jobs: [] }))
-      .then((data) => setJobs((data.jobs as JobRow[]).filter((j) => j.status === "done" && j.type === "image")))
+      .then((data) => setJobs((data.jobs as JobRow[]).filter((j) => j.status === "done")))
       .catch(() => setJobs([]));
     fetch("/api/character-references")
       .then((res) => (res.ok ? res.json() : { references: [] }))
@@ -134,14 +122,18 @@ export function MediaPickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="animate-popover-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
         className="flex max-h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-950"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
           <h2 className="text-lg font-medium">Upload or select media</h2>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors duration-150 ease-out hover:bg-white/20 active:scale-[0.95]"
+          >
             <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -154,14 +146,14 @@ export function MediaPickerModal({
               <button
                 type="button"
                 onClick={() => setTab("creations")}
-                className={`rounded-full px-3 py-1.5 text-sm ${tab === "creations" ? "bg-white/10" : "text-muted-foreground hover:bg-white/5"}`}
+                className={`rounded-full px-3 py-1.5 text-sm transition-colors duration-150 ease-out ${tab === "creations" ? "bg-white/15" : "text-muted-foreground hover:bg-white/8"}`}
               >
                 Creations
               </button>
               <button
                 type="button"
                 onClick={() => setTab("uploads")}
-                className={`rounded-full px-3 py-1.5 text-sm ${tab === "uploads" ? "bg-white/10" : "text-muted-foreground hover:bg-white/5"}`}
+                className={`rounded-full px-3 py-1.5 text-sm transition-colors duration-150 ease-out ${tab === "uploads" ? "bg-white/15" : "text-muted-foreground hover:bg-white/8"}`}
               >
                 Uploads
               </button>
@@ -193,9 +185,9 @@ export function MediaPickerModal({
                         key={r.id}
                         type="button"
                         onClick={() => togglePick(r.mediaType, r.storageKey, r.mediaType === "image" ? r.url : null)}
-                        className={`relative aspect-square w-full overflow-hidden rounded-xl border ${
+                        className={`relative aspect-square w-full overflow-hidden rounded-xl border transition-colors duration-150 ease-out ${
                           picked.some((p) => p.storageKey === r.storageKey) ? "border-white" : "border-transparent hover:border-white/30"
-                        } ${r.mediaType === "audio" ? "flex items-center justify-center bg-white/5" : ""}`}
+                        } ${r.mediaType === "audio" ? "flex items-center justify-center bg-white/8" : ""}`}
                         title={r.label}
                       >
                         {r.mediaType === "image" ? (
@@ -231,7 +223,7 @@ export function MediaPickerModal({
                   type="button"
                   disabled={uploading === "image"}
                   onClick={() => imageInputRef.current?.click()}
-                  className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/20 text-xs text-muted-foreground hover:border-white/35 hover:text-foreground disabled:opacity-50"
+                  className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/8 text-xs text-muted-foreground transition-colors duration-150 ease-out hover:bg-white/15 hover:text-foreground disabled:opacity-50 active:scale-[0.98]"
                 >
                   <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                     <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -256,7 +248,7 @@ export function MediaPickerModal({
                       type="button"
                       disabled={uploading === "audio"}
                       onClick={() => audioInputRef.current?.click()}
-                      className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/20 text-xs text-muted-foreground hover:border-white/35 hover:text-foreground disabled:opacity-50"
+                      className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/8 text-xs text-muted-foreground transition-colors duration-150 ease-out hover:bg-white/15 hover:text-foreground disabled:opacity-50 active:scale-[0.98]"
                     >
                       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                         <path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="1.5" />
@@ -272,7 +264,7 @@ export function MediaPickerModal({
                       // eslint-disable-next-line @next/next/no-img-element -- presigned/blob URL, not a static asset
                       <img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-white/5 text-[10px] text-zinc-400">
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-white/8 text-[10px] text-zinc-400">
                         <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
                           <path d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="1.5" />
                         </svg>
@@ -282,7 +274,7 @@ export function MediaPickerModal({
                     <button
                       type="button"
                       onClick={() => setPicked((prev) => prev.filter((x) => x.storageKey !== p.storageKey))}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white transition-colors duration-150 ease-out hover:bg-red-400 active:scale-[0.95]"
                     >
                       <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3">
                         <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -298,7 +290,7 @@ export function MediaPickerModal({
                 type="button"
                 disabled={picked.length === 0}
                 onClick={() => onConfirm(picked)}
-                className="rounded-full bg-white px-6 py-2 text-sm font-medium text-black disabled:opacity-40"
+                className="rounded-full bg-white px-6 py-2 text-sm font-medium text-black transition-transform duration-150 ease-out disabled:opacity-40 active:scale-[0.97]"
               >
                 Use
               </button>

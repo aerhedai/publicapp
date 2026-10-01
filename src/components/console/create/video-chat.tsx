@@ -276,7 +276,7 @@ export function VideoChat({
             type="button"
             disabled={dispatching}
             onClick={() => void handleGenerateVideo()}
-            className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white transition-transform duration-150 ease-out disabled:opacity-50 active:scale-[0.97]"
           >
             {dispatching ? "Starting..." : "Generate"}
           </button>
@@ -287,7 +287,7 @@ export function VideoChat({
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-white/35 hover:text-foreground"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/12 text-muted-foreground backdrop-blur-md transition-colors duration-150 ease-out hover:bg-white/20 hover:text-foreground active:scale-[0.97]"
           title="Add reference media"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
@@ -309,7 +309,7 @@ export function VideoChat({
             <button
               type="button"
               onClick={() => removeSlot(s.storageKey)}
-              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700"
+              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-800 text-white transition-colors duration-150 ease-out hover:bg-neutral-700 active:scale-[0.95]"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-2.5 w-2.5">
                 <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -345,12 +345,12 @@ export function VideoChat({
 
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md">MiniMax H3</span>
+          <span className="rounded-full bg-white/12 px-3 py-1.5 text-sm text-zinc-200 backdrop-blur-md">MiniMax H3</span>
           <div className="relative" ref={settingsPopoverRef}>
             <button
               type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm text-zinc-300 backdrop-blur-md hover:bg-white/10"
+              className="flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 text-sm text-zinc-200 backdrop-blur-md transition-colors duration-150 ease-out hover:bg-white/20 active:scale-[0.97]"
             >
               {`${videoSettings.aspectRatio} · ${videoSettings.durationSeconds}s · ${videoSettings.resolution}`}
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
@@ -364,7 +364,7 @@ export function VideoChat({
               </svg>
             </button>
             {settingsOpen && (
-              <div className="absolute bottom-full left-0 z-20 mb-2">
+              <div className="animate-popover-in absolute bottom-full left-0 z-20 mb-2">
                 <VideoSettingsPopover settings={videoSettings} onChange={setVideoSettings} compact />
               </div>
             )}
@@ -375,7 +375,7 @@ export function VideoChat({
           type="button"
           disabled={!input.trim() || sending}
           onClick={handleSend}
-          className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white transition-transform duration-150 ease-out disabled:opacity-50 active:scale-[0.97]"
         >
           {sending ? "Thinking..." : "Send"}
         </button>

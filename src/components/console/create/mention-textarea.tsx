@@ -171,7 +171,7 @@ export function MentionTextarea({
       />
       {trigger && filtered.length > 0 && (
         <div
-          className="absolute z-30 max-h-48 w-40 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 py-1 shadow-xl"
+          className="animate-popover-in absolute z-30 max-h-48 w-40 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 py-1 shadow-xl"
           style={{ top: trigger.top + 22, left: trigger.left }}
         >
           {filtered.map((o, i) => (
@@ -182,7 +182,7 @@ export function MentionTextarea({
                 e.preventDefault();
                 selectOption(o.tag);
               }}
-              className={`block w-full px-3 py-1.5 text-left text-sm ${
+              className={`block w-full px-3 py-1.5 text-left text-sm transition-colors duration-150 ease-out ${
                 i === activeIndex ? "bg-white/10 text-foreground" : "text-zinc-300 hover:bg-white/5"
               }`}
             >

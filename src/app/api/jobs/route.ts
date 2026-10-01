@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
-import { generationJobs } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { generationJobs, jobType } from "@/db/schema";
+import { and, eq, desc } from "drizzle-orm";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 import { createGenerationJob } from "@/lib/create-job";
 import { dispatchOneJob } from "@/lib/dispatch-one-job";
@@ -69,17 +69,40 @@ export async function POST(req: Request) {
   return NextResponse.json({ job });
 }
 
-export async function GET() {
+// Optional ?type=image|video|stitch and ?limit=N (default 30, capped at 100) -
+// applied server-side, not just sliced client-side after the fact. Without
+// this, every 2.5s live-poll tick (use-live-jobs.ts) and every
+// media-picker-modal.tsx open re-fetched the user's *entire* lifetime job
+// history regardless of which tool/type actually needed it - confirmed as a
+// real, unbounded round-trip, not a hypothetical one.
+const DEFAULT_LIMIT = 30;
+const MAX_LIMIT = 100;
+
+export async function GET(req: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const typeParam = searchParams.get("type");
+  if (typeParam && !jobType.enumValues.includes(typeParam as (typeof jobType.enumValues)[number])) {
+    return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  }
+
+  const limitParam = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, MAX_LIMIT) : DEFAULT_LIMIT;
+
   const rows = await db
     .select()
     .from(generationJobs)
-    .where(eq(generationJobs.userId, userId))
-    .orderBy(desc(generationJobs.createdAt));
+    .where(
+      typeParam
+        ? and(eq(generationJobs.userId, userId), eq(generationJobs.type, typeParam as (typeof jobType.enumValues)[number]))
+        : eq(generationJobs.userId, userId)
+    )
+    .orderBy(desc(generationJobs.createdAt))
+    .limit(limit);
 
   return NextResponse.json({ jobs: rows });
 }

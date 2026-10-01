@@ -1,5 +1,6 @@
 import { AuthTrigger } from "@/components/auth/auth-trigger";
 import { PRICING_TIERS } from "@/lib/pricing-tiers";
+import { imageCreditCost, videoCreditCost, VIDEO_MIN_DURATION_SECONDS } from "@/lib/pricing-math";
 
 export function Pricing() {
   return (
@@ -10,8 +11,14 @@ export function Pricing() {
             Simple, credit-based pricing
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Monthly subscription or one-time top-up - both add to the same credit balance. 1 credit = 1 image, 80
-            credits = 1 video.
+            {/* Was a stale flat "80 credits = 1 video" from before this
+                session's resolution/duration-aware repricing - video cost
+                now depends on what you pick (pricing-math.ts), so this
+                states the real cheapest-tier numbers instead of a single
+                number that's wrong most of the time. */}
+            Monthly subscription or one-time top-up - both add to the same credit balance. Images start at{" "}
+            {imageCreditCost("480p")} credit, videos start at {videoCreditCost("480p", VIDEO_MIN_DURATION_SECONDS)}{" "}
+            credits - more for higher resolution or longer duration.
           </p>
         </div>
 

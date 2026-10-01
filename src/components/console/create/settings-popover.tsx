@@ -68,7 +68,7 @@ export function ImageSettingsPopover({
   onChange: (next: ImageSettings) => void;
 }) {
   return (
-    <div className="w-80 rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+    <div className="w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
       <h3 className="text-sm font-medium text-white">Image settings</h3>
       <div className="my-4 border-t border-white/10" />
 
@@ -204,7 +204,7 @@ export function VideoSettingsPopover({
   compact?: boolean;
 }) {
   return (
-    <div className="w-80 rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
+    <div className="w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#141414] p-5 shadow-2xl">
       <h3 className="text-sm font-medium text-white">Video settings</h3>
       <div className="my-4 border-t border-white/10" />
 

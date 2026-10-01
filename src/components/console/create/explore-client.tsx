@@ -8,7 +8,7 @@ export function ExploreClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const { jobs, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 sm:px-8 py-10">
       <NoticeStack notices={notices} onDismiss={dismissNotice} />
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Explore</h1>

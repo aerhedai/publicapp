@@ -36,7 +36,7 @@ export function HomeClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const { jobs, addOptimistic, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-8 py-10">
       <NoticeStack notices={notices} onDismiss={dismissNotice} />
 
       <CapabilityCards />

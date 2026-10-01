@@ -27,7 +27,7 @@ const FAQS = [
 
 export default function SupportPage() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 sm:px-8 py-10">
       <h1 className="font-display text-2xl font-semibold tracking-tight">Support</h1>
 
       <div className="grid gap-x-12 gap-y-8 sm:grid-cols-2">

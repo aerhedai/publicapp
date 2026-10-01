@@ -64,8 +64,18 @@ export function AccountMenu({ credits, collapsed }: { credits: number; collapsed
   useEffect(() => {
     if (!open || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    // Clamped to the viewport's right edge (minus a 16px gutter) - on
+    // mobile's narrower off-canvas sidebar drawer (ConsoleShell), the
+    // trigger sits much closer to the screen's right edge than on desktop,
+    // so an unclamped `rect.right + 8` plus this popup's own w-72 (288px)
+    // pushed most of it off-screen entirely. Confirmed live via the math:
+    // a ~240px-wide mobile drawer put the popup's right edge at ~536px on
+    // a 375px viewport.
+    const POPUP_WIDTH = 288; // w-72
+    const GUTTER = 16;
+    const left = Math.min(rect.right + 8, window.innerWidth - POPUP_WIDTH - GUTTER);
     setPosition({
-      left: rect.right + 8,
+      left: Math.max(GUTTER, left),
       bottom: window.innerHeight - rect.bottom,
     });
   }, [open]);

@@ -315,7 +315,7 @@ function PolicyCard({
  * ToS and Privacy URLs) can deep-link straight to the relevant section. */
 export function PolicyDocument() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 sm:px-8 py-10">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Terms &amp; Policies</h1>
         <p className="mt-1 text-sm text-muted-foreground">Last updated {LAST_UPDATED}.</p>

@@ -161,8 +161,14 @@ export function MediaPickerModal({
           </button>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 divide-x divide-white/10 overflow-hidden">
-          <div className="flex flex-col overflow-hidden">
+        {/* grid-cols-1 below md - this rigid side-by-side split was confirmed
+            unusable on mobile: each half got roughly half of an already-
+            narrow viewport (~180px on a 375px phone), squeezing a 3-column
+            thumbnail grid into ~55px tiles. Stacks to one column (picker on
+            top, upload/picked below, each independently scrollable within
+            its own capped height) below md, full side-by-side at md+. */}
+        <div className="grid flex-1 grid-cols-1 divide-y divide-white/10 overflow-y-auto md:grid-cols-2 md:divide-x md:divide-y-0 md:overflow-hidden">
+          <div className="flex flex-col md:overflow-hidden">
             <div className="flex gap-2 border-b border-white/10 px-6 py-3">
               <button
                 type="button"
@@ -179,7 +185,7 @@ export function MediaPickerModal({
                 Uploads
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="p-6 md:flex-1 md:overflow-y-auto">
               {tab === "creations" ? (
                 jobs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No completed images yet.</p>
@@ -226,8 +232,8 @@ export function MediaPickerModal({
             </div>
           </div>
 
-          <div className="flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex flex-col md:overflow-hidden">
+            <div className="p-6 md:flex-1 md:overflow-y-auto">
               <div className="grid grid-cols-3 gap-3">
                 <input
                   ref={imageInputRef}

@@ -4,7 +4,7 @@
 // point placeholder so the nav item has somewhere to go.
 export default function CloneToolPage() {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-8 py-14 text-center">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 sm:px-8 py-14 text-center">
       <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
         Clone a reel
       </h1>

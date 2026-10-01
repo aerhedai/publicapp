@@ -264,7 +264,7 @@ export function ConsoleShell({
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="border-b border-border px-8 py-4 text-sm font-medium">
+        <div className="border-b border-border px-4 sm:px-8 py-4 text-sm font-medium">
           <ConsoleBreadcrumb />
         </div>
         <main className="flex-1 overflow-y-auto">{children}</main>

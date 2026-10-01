@@ -70,7 +70,10 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     setAddingExisting(false);
   }
 
-  async function saveSceneDraft(clipId: string, sceneDraft: { scene: PublicVideoScene; characterRefs: Record<string, string> }) {
+  async function saveSceneDraft(
+    clipId: string,
+    sceneDraft: { scene: PublicVideoScene; characterRefs: Record<string, string>; audioRefs: Record<string, string> }
+  ) {
     const res = await fetch(`/api/projects/${projectId}/clips/${clipId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

@@ -3,14 +3,19 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
 import { characterReferences } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { assertOwnsKey } from "@/storage/r2";
+import { assertOwnsKey, createPresignedDownload } from "@/storage/r2";
 import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 import { ensureUserRow } from "@/lib/ensure-user";
 
 // Registers an already-uploaded R2 object (via the existing presigned-upload
-// flow in /api/uploads) as a labeled, reusable character reference. Generated
-// references (from a "mint a portrait" job) are inserted directly by
-// src/lib/apply-job-result.ts instead - this route is the upload-side path only.
+// flow in /api/uploads) as a reusable media reference - the picker modal's
+// persistent "Uploads" library (src/components/console/create/media-picker-modal.tsx).
+// `label` is now just a display caption (defaults to the storage key's own
+// filename segment) - matching a specific reference happens via @Image1/
+// @Audio1 tags resolved against the current compose session's attachment
+// order (src/lib/scene-validation.ts's resolveReferenceTags), never by name.
+// Generated references (from a "mint a portrait" job) are inserted directly
+// by src/lib/apply-job-result.ts instead - this route is the upload-side path only.
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
@@ -23,8 +28,14 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  if (!body || typeof body.label !== "string" || !body.label.trim() || typeof body.storageKey !== "string") {
+  if (!body || typeof body.storageKey !== "string" || !body.storageKey.trim()) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  if (body.label !== undefined && typeof body.label !== "string") {
+    return NextResponse.json({ error: "label must be a string" }, { status: 400 });
+  }
+  if (body.mediaType !== undefined && body.mediaType !== "image" && body.mediaType !== "audio") {
+    return NextResponse.json({ error: 'mediaType must be "image" or "audio"' }, { status: 400 });
   }
 
   try {
@@ -35,9 +46,17 @@ export async function POST(req: Request) {
 
   await ensureUserRow(userId);
 
+  const label = (typeof body.label === "string" ? body.label.trim() : "") || body.storageKey.split("/").pop() || "Untitled";
+
   const [reference] = await db
     .insert(characterReferences)
-    .values({ userId, label: body.label.trim(), storageKey: body.storageKey, source: "uploaded" })
+    .values({
+      userId,
+      label,
+      mediaType: body.mediaType ?? "image",
+      storageKey: body.storageKey,
+      source: "uploaded",
+    })
     .returning();
 
   return NextResponse.json({ reference });
@@ -55,5 +74,13 @@ export async function GET() {
     .where(eq(characterReferences.userId, userId))
     .orderBy(desc(characterReferences.createdAt));
 
-  return NextResponse.json({ references: rows });
+  // Eagerly presigned (not lazily per-card like output-preview.tsx) - this
+  // is the picker modal's "Uploads" tab, a small personal library, not a
+  // paginated feed, so one response with every thumbnail ready is simpler
+  // than N lazy per-card fetches.
+  const references = await Promise.all(
+    rows.map(async (row) => ({ ...row, url: await createPresignedDownload(row.storageKey, 600) }))
+  );
+
+  return NextResponse.json({ references });
 }

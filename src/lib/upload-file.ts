@@ -16,13 +16,22 @@ export async function uploadFile(file: File): Promise<string> {
   return key as string;
 }
 
-/** Registers an uploaded storage key as a named character reference, reusable
- * across jobs/sessions by label (see character_references table). */
-export async function registerCharacterReference(label: string, storageKey: string): Promise<void> {
+/** Registers an uploaded storage key in the persistent media-reference
+ * library (the picker modal's "Uploads" tab - see character_references
+ * table), so it's reusable in later sessions without re-uploading. `label`
+ * is just a display caption now, not a matching key - matching happens via
+ * @Image1/@Audio1 tags (src/lib/scene-validation.ts's resolveReferenceTags). */
+export async function registerCharacterReference(
+  storageKey: string,
+  mediaType: "image" | "audio" = "image",
+  label?: string
+): Promise<{ id: string }> {
   const res = await fetch("/api/character-references", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ label, storageKey }),
+    body: JSON.stringify({ label, storageKey, mediaType }),
   });
   if (!res.ok) throw new Error("Couldn't save that reference");
+  const { reference } = await res.json();
+  return { id: reference.id as string };
 }

@@ -88,17 +88,27 @@ export const projectStatus = pgEnum("project_status", [
 // "existing" - this clip reuses a past completed video job's output.
 export const clipSource = pgEnum("clip_source", ["generate", "existing"]);
 
-// A reusable, user-owned character reference photo - either uploaded
-// directly or minted by a prior "generate a reference image" job. Distinct
-// from `uploads`: this is a labeled, cross-job library, not a one-off file.
+// A reusable, user-owned media reference (photo or audio clip) - either
+// uploaded directly or minted by a prior "generate a reference image" job.
+// Distinct from `uploads`: this is a persistent cross-job library (the
+// picker modal's "Uploads" tab), not a one-off file.
 export const referenceSource = pgEnum("reference_source", ["uploaded", "generated"]);
+
+// "image" or "audio" - video is deliberately not a reference type yet, since
+// no worker (image or video) can consume a video file as input today.
+export const mediaReferenceType = pgEnum("media_reference_type", ["image", "audio"]);
 
 export const characterReferences = pgTable("character_references", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  label: text("label").notNull(), // user-facing name, e.g. "Sarah"
+  // Display caption only (e.g. the original filename) - no longer a matching
+  // key. Matching a specific reference now happens via @Image1/@Audio1 tags
+  // resolved against the current compose session's attachment order (see
+  // src/lib/scene-validation.ts's resolveReferenceTags), not by name.
+  label: text("label").notNull(),
+  mediaType: mediaReferenceType("media_type").notNull().default("image"),
   storageKey: text("storage_key").notNull(),
   source: referenceSource("source").notNull(),
   sourceJobId: uuid("source_job_id"), // set when source = "generated"

@@ -60,13 +60,17 @@ export class RunpodDispatchError extends Error {
 }
 
 // Matches handler.py's job contract exactly (pipeline/webapp/cloud/handler.py):
-// {userId, scene, characterRefs: {char_id: presigned_get_url}}. `input`'s
-// characterRefs here holds R2 *storage keys* (server-owned, checked via
-// assertOwnsKey), not URLs - buildWorkflowPayload presigns them into GET URLs
-// right before dispatch, never earlier.
+// {userId, scene, characterRefs: {char_id: presigned_get_url}, audioRefs: {audio_id: presigned_get_url}}.
+// `input`'s characterRefs/audioRefs here hold R2 *storage keys* (server-owned,
+// checked via assertOwnsKey), not URLs - buildWorkflowPayload presigns them
+// into GET URLs right before dispatch, never earlier. Keys are the literal
+// @Image1/@Audio1 tag strings (see src/lib/scene-validation.ts's
+// resolveReferenceTags) - both the scene's characters/audio_refs entries and
+// the worker's own <Picture i>/<Audio i> prompt labels.
 export interface VideoJobInput {
   scene: unknown;
   characterRefs?: Record<string, string>;
+  audioRefs?: Record<string, string>;
 }
 
 // Matches handler_image.py's job contract (pipeline/webapp/cloud/handler_image.py),
@@ -116,7 +120,8 @@ export async function buildWorkflowPayload(params: {
   if (type === "video") {
     const videoInput = input as VideoJobInput;
     const characterRefs = await presignCharacterRefs(userId, videoInput.characterRefs);
-    return { input: { userId, scene: videoInput.scene, characterRefs, r2 } };
+    const audioRefs = await presignCharacterRefs(userId, videoInput.audioRefs);
+    return { input: { userId, scene: videoInput.scene, characterRefs, audioRefs, r2 } };
   }
 
   const imageInput = input as ImageJobInput;

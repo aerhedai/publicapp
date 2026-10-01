@@ -1,5 +1,3 @@
-import type { characterReferences } from "@/db/schema";
-
 // The LLM controller's video schema (src/lib/openrouter.ts) - deliberately
 // narrower than the pipeline's full story.json scene shape. No `dialogue`
 // field exists here at all (not just "must be empty") - a standalone public
@@ -7,18 +5,29 @@ import type { characterReferences } from "@/db/schema";
 // prose; if dialogue support is wanted later it needs its own explicit UI
 // field, not inference. No beats/continuity-chaining fields either - those
 // only mean something in a curated multi-scene story, not a single ad-hoc
-// public job.
+// public job. No "characters" field either - which references are used is
+// decided entirely by @Image1/@Audio1 tags in the user's own message
+// (resolveReferenceTags below), never by the LLM.
 export interface VideoSceneDraft {
   cameraCustom: string;
-  characters: { label: string; referenceId?: string }[];
   duration: number;
   action: string;
   audioTag: string;
 }
 
-export interface MissingCharacter {
-  label: string;
-  reason: "no_reference_id" | "reference_not_owned";
+// One reference attached to the current compose session (the picker modal's
+// selection), numbered by attachment order within that session - this
+// ordering is what "@Image1"/"@Audio1" refer to. Not persisted as-is; each
+// slot's storageKey may itself come from a persistent character_references
+// row (Uploads tab / Creations tab) or a brand new upload.
+export interface ReferenceTagSlot {
+  type: "image" | "audio";
+  index: number; // 1-based, matches the tag's numeric suffix
+  storageKey: string;
+}
+
+export interface UnresolvedTag {
+  tag: string; // e.g. "Image3"
 }
 
 // The exact scene JSON shape graph_builder.py's build_scene_graph consumes
@@ -29,6 +38,7 @@ export interface PublicVideoScene {
   camera: "custom";
   camera_custom: string;
   characters: string[];
+  audio_refs: string[];
   continue_from_previous: false;
   continuity: string;
   duration: number;
@@ -48,44 +58,65 @@ export interface PublicVideoScene {
   resolution: string;
 }
 
-export type SceneValidationResult =
-  | { ok: true; scene: PublicVideoScene; characterRefs: Record<string, string> }
-  | { ok: false; missingCharacters: MissingCharacter[]; otherIssues: string[] };
+export type TagResolutionResult =
+  | { ok: true; characterRefs: Record<string, string>; audioRefs: Record<string, string> }
+  | { ok: false; unresolved: UnresolvedTag[] };
+
+const TAG_PATTERN = /@(Image|Audio)(\d+)\b/g;
 
 /**
- * Fills in any `referenceId` the LLM left unset (or set to an empty string)
- * by matching the character's `label` against the user's existing
- * references by exact, case-insensitive label - confirmed live that the
- * model doesn't reliably self-match even when the exact reference is right
- * there in its own context, so this is done deterministically rather than
- * trusted to the model.
+ * Parses every @Image1/@Audio1-style tag out of the raw message text (in
+ * order of first appearance) and resolves each against the current compose
+ * session's attached slots. This fully replaces the old LLM/label-based
+ * character matching: which references a job uses is now decided
+ * deterministically by which tags the user actually typed, not by the LLM
+ * inferring intent from prose. A tag with no matching attached slot (e.g.
+ * "@Image3" when only 2 images are attached) is reported as unresolved -
+ * callers should surface this before ever calling the LLM, not after.
  */
-export function resolveReferencesByLabel(
-  draft: VideoSceneDraft,
-  referenceRows: { id: string; label: string }[]
-): VideoSceneDraft {
-  const byLabel = new Map(referenceRows.map((row) => [row.label.trim().toLowerCase(), row.id]));
-  return {
-    ...draft,
-    characters: draft.characters.map((character) => {
-      if (character.referenceId) return character;
-      const matchId = byLabel.get(character.label.trim().toLowerCase());
-      return matchId ? { ...character, referenceId: matchId } : character;
-    }),
-  };
+export function resolveReferenceTags(text: string, slots: ReferenceTagSlot[]): TagResolutionResult {
+  const bySlot = new Map(slots.map((s) => [`${s.type}:${s.index}`, s.storageKey]));
+  const characterRefs: Record<string, string> = {};
+  const audioRefs: Record<string, string> = {};
+  const unresolved: UnresolvedTag[] = [];
+  const seen = new Set<string>();
+
+  for (const match of text.matchAll(TAG_PATTERN)) {
+    const kind = match[1].toLowerCase() as "image" | "audio";
+    const index = Number(match[2]);
+    const tag = `${match[1]}${match[2]}`;
+    if (seen.has(tag)) continue;
+    seen.add(tag);
+
+    const storageKey = bySlot.get(`${kind}:${index}`);
+    if (!storageKey) {
+      unresolved.push({ tag });
+      continue;
+    }
+    if (kind === "image") characterRefs[tag] = storageKey;
+    else audioRefs[tag] = storageKey;
+  }
+
+  if (unresolved.length > 0) {
+    return { ok: false, unresolved };
+  }
+  return { ok: true, characterRefs, audioRefs };
 }
 
 /**
  * The deterministic gate that runs after every "draft" response from the LLM
- * controller, before any confirm-card/dispatch. The LLM never decides
- * "inputs are satisfied" - it only proposes a draft (optionally matching a
- * mentioned character against `existingReferences` it was given as context);
- * this function is the only place that actually checks ownership.
+ * controller, before any confirm-card/dispatch. The LLM only ever drafts
+ * cameraCustom/duration/action/audioTag now - characterRefs/audioRefs come
+ * entirely from resolveReferenceTags, called separately (see
+ * src/app/api/chat/route.ts) before this runs. `characterRefs`/`audioRefs`
+ * keys (e.g. "Image1", "Audio1") become both the scene's characters/
+ * audio_refs entries and the worker's <Picture i>/<Audio i> prompt labels.
  */
 export function validateVideoSceneDraft(
   draft: VideoSceneDraft,
-  ownedReferences: Map<string, typeof characterReferences.$inferSelect>
-): SceneValidationResult {
+  characterRefs: Record<string, string>,
+  audioRefs: Record<string, string>
+): { ok: true; scene: PublicVideoScene } | { ok: false; otherIssues: string[] } {
   const otherIssues: string[] = [];
   if (!draft.action?.trim()) {
     otherIssues.push("Scene has no description.");
@@ -94,23 +125,8 @@ export function validateVideoSceneDraft(
     otherIssues.push("Scene duration must be a positive number of seconds.");
   }
 
-  const missingCharacters: MissingCharacter[] = [];
-  const characterRefs: Record<string, string> = {};
-  for (const character of draft.characters) {
-    if (!character.referenceId) {
-      missingCharacters.push({ label: character.label, reason: "no_reference_id" });
-      continue;
-    }
-    const row = ownedReferences.get(character.referenceId);
-    if (!row) {
-      missingCharacters.push({ label: character.label, reason: "reference_not_owned" });
-      continue;
-    }
-    characterRefs[character.label] = row.storageKey;
-  }
-
-  if (missingCharacters.length > 0 || otherIssues.length > 0) {
-    return { ok: false, missingCharacters, otherIssues };
+  if (otherIssues.length > 0) {
+    return { ok: false, otherIssues };
   }
 
   return {
@@ -119,7 +135,8 @@ export function validateVideoSceneDraft(
       id: "001",
       camera: "custom",
       camera_custom: draft.cameraCustom ?? "",
-      characters: draft.characters.map((character) => character.label),
+      characters: Object.keys(characterRefs),
+      audio_refs: Object.keys(audioRefs),
       continue_from_previous: false,
       continuity: "",
       duration: draft.duration,
@@ -132,6 +149,5 @@ export function validateVideoSceneDraft(
       aspect_ratio: "Auto",
       resolution: "480p",
     },
-    characterRefs,
   };
 }

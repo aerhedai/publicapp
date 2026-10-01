@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
+import { MediaPickerModal, type PickedMedia } from "./media-picker-modal";
 import { ImageSettingsPopover } from "./settings-popover";
 import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from "./types";
 import { computeImageDimensions } from "@/lib/pixel-presets";
@@ -12,12 +12,25 @@ import { computeImageDimensions } from "@/lib/pixel-presets";
 // sync manually since the two repos don't share a build.
 const MAX_REFERENCES = 9;
 
+interface AttachedRef {
+  storageKey: string;
+  previewUrl: string | null;
+}
+
 /**
  * The actual image-generation form: references + prompt + model/settings +
  * Generate, wired straight to POST /api/jobs. Shared by the Tools > Image
  * page (image-tool-client.tsx) and the home page's create box
  * (creation-box.tsx) so both are literally the same logic, not two copies
  * that can drift.
+ *
+ * Unlike video-chat.tsx, this tool has no @Image1-style tagging - every
+ * attached reference is always composed in (the Flux.2 Klein worker takes
+ * an ordered list, not a selectively-referenced one; see
+ * handler_image.py's own docstring), so there's no ambiguity to resolve and
+ * no mention input needed. The picker modal (media-picker-modal.tsx) is
+ * still used here for its Creations/Uploads reuse, just without the tagging
+ * half of that feature.
  *
  * This form only ever composes and sends - it never shows a result or a
  * loading state itself (that lives in the Creations tab's grid, driven by
@@ -31,7 +44,8 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
   const [settings, setSettings] = useState<ImageSettings>(DEFAULT_IMAGE_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [references, setReferences] = useState<ReferenceSlot[]>([]);
+  const [references, setReferences] = useState<AttachedRef[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -45,9 +59,16 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
     return () => document.removeEventListener("mousedown", onClick);
   }, [settingsOpen]);
 
-  const attachedRefs = references.filter((r) => r.storageKey);
-  const uploading = references.some((r) => r.uploading);
-  const canGenerate = prompt.trim().length > 0 && !uploading && !dispatching;
+  const canGenerate = prompt.trim().length > 0 && !dispatching;
+
+  function addPicked(picked: PickedMedia[]) {
+    setReferences((prev) => {
+      const existing = new Set(prev.map((r) => r.storageKey));
+      const additions = picked.filter((p) => !existing.has(p.storageKey)).map((p) => ({ storageKey: p.storageKey, previewUrl: p.previewUrl }));
+      return [...prev, ...additions].slice(0, MAX_REFERENCES);
+    });
+    setPickerOpen(false);
+  }
 
   async function handleGenerate() {
     if (!canGenerate) return;
@@ -55,7 +76,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
     setErrorMessage(null);
     try {
       const { width, height } = computeImageDimensions(settings.aspectRatio, settings.resolution);
-      const characterRefs = Object.fromEntries(attachedRefs.map((r) => [r.label, r.storageKey as string]));
+      const characterRefs = Object.fromEntries(references.map((r, i) => [`Image${i + 1}`, r.storageKey]));
 
       const res = await fetch("/api/jobs", {
         method: "POST",
@@ -63,9 +84,9 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
         body: JSON.stringify({
           type: "image",
           input: {
-            mode: attachedRefs.length > 0 ? "storyboard" : "environment",
+            mode: references.length > 0 ? "storyboard" : "environment",
             prompt: prompt.trim(),
-            characterRefs: attachedRefs.length > 0 ? characterRefs : undefined,
+            characterRefs: references.length > 0 ? characterRefs : undefined,
             width,
             height,
           },
@@ -91,7 +112,38 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
 
   return (
     <div className="flex flex-col gap-3">
-      <ReferenceUploadPanel title="" slots={references} onChange={setReferences} maxSlots={MAX_REFERENCES} />
+      <MediaPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} allowAudio={false} onConfirm={addPicked} />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          disabled={references.length >= MAX_REFERENCES}
+          className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-white/35 hover:text-foreground disabled:opacity-50"
+          title="Add reference images"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+        {references.map((r) => (
+          <div key={r.storageKey} className="relative h-14 w-14 overflow-hidden rounded-xl border border-white/10">
+            {r.previewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- presigned/blob URL, not a static asset
+              <img src={r.previewUrl} alt="" className="h-full w-full object-cover" />
+            )}
+            <button
+              type="button"
+              onClick={() => setReferences((prev) => prev.filter((x) => x.storageKey !== r.storageKey))}
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
 
       <textarea
         rows={2}

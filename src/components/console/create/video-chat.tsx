@@ -5,64 +5,66 @@ import { useRouter } from "next/navigation";
 import type { PublicVideoScene } from "@/lib/scene-validation";
 import { VideoSettingsPopover } from "./settings-popover";
 import { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "./types";
+import { MentionTextarea } from "./mention-textarea";
+import { MediaPickerModal, type PickedMedia } from "./media-picker-modal";
 
 interface ChatTurn {
   role: "user" | "assistant";
   content: string;
 }
 
-type ReadyState = { scene: PublicVideoScene; characterRefs: Record<string, string>; estimatedCredits: number };
-type MissingState = { missing: { label: string }[]; generateCostCredits: number };
+// One attached item for the current compose session, numbered by
+// attachment order within this session (resets every fresh VideoChat
+// instance/remount) - this is exactly what "@Image1"/"@Audio1" refer to.
+// Not persisted as this shape; storageKey may itself come from a brand new
+// upload, the Uploads library, or a past Creation (media-picker-modal.tsx).
+interface Slot {
+  type: "image" | "audio";
+  index: number;
+  storageKey: string;
+  previewUrl: string | null;
+}
+
+type ReadyState = {
+  scene: PublicVideoScene;
+  characterRefs: Record<string, string>;
+  audioRefs: Record<string, string>;
+  estimatedCredits: number;
+};
 
 type ChatApiResponse =
   | { type: "question"; message: string }
-  | { type: "missing_references"; missing: { label: string }[]; generateCostCredits: number }
-  | { type: "ready"; scene: PublicVideoScene; characterRefs: Record<string, string>; estimatedCredits: number }
+  | { type: "unresolved_tags"; tags: string[] }
+  | {
+      type: "ready";
+      scene: PublicVideoScene;
+      characterRefs: Record<string, string>;
+      audioRefs: Record<string, string>;
+      estimatedCredits: number;
+    }
   | { type: "error"; message: string };
 
-async function uploadFile(file: File): Promise<string> {
-  const presign = await fetch("/api/uploads", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: file.name, contentType: file.type, sizeBytes: file.size }),
-  });
-  if (!presign.ok) throw new Error("Couldn't get an upload URL");
-  const { key, uploadUrl } = await presign.json();
+const TAG_PATTERN = /@(Image|Audio)(\d+)\b/g;
 
-  const put = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-  if (!put.ok) throw new Error("Upload to storage failed");
-
-  return key as string;
-}
-
-async function registerReference(label: string, storageKey: string): Promise<void> {
-  const res = await fetch("/api/character-references", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ label, storageKey }),
-  });
-  if (!res.ok) throw new Error("Couldn't save that reference");
-}
-
-async function pollJobUntilDone(jobId: string, timeoutMs = 5 * 60 * 1000): Promise<"done" | "failed" | "timeout"> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const res = await fetch(`/api/jobs/${jobId}`);
-    if (res.ok) {
-      const { job } = await res.json();
-      if (job.status === "done") return "done";
-      if (job.status === "failed") return "failed";
-    }
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+/** Client-side mirror of src/lib/scene-validation.ts's resolveReferenceTags -
+ * duplicated rather than imported because that module is also imported by
+ * API routes with server-only context; this half just needs the same regex
+ * to validate before ever calling /api/chat (the server re-validates too,
+ * never trusting the client). */
+function findUnresolvedTags(text: string, slots: Slot[]): string[] {
+  const bySlot = new Set(slots.map((s) => `${s.type}:${s.index}`));
+  const unresolved: string[] = [];
+  for (const match of text.matchAll(TAG_PATTERN)) {
+    const key = `${match[1].toLowerCase()}:${Number(match[2])}`;
+    if (!bySlot.has(key)) unresolved.push(`${match[1]}${match[2]}`);
   }
-  return "timeout";
+  return unresolved;
 }
 
 export function VideoChat({
   dispatchOverride,
   onDispatched,
   onJobCreated,
-  referencesPanel,
 }: {
   // When provided, called instead of POSTing to /api/jobs directly - used by
   // the storyboard wrapper (src/app/console/projects/**) to save a scene
@@ -70,7 +72,11 @@ export function VideoChat({
   // "generate" clips are dispatched one at a time, in order, by
   // advanceProject - see src/lib/projects.ts). The standalone Tools > Video
   // page passes neither prop and keeps today's behavior exactly.
-  dispatchOverride?: (params: { scene: PublicVideoScene; characterRefs: Record<string, string> }) => Promise<void>;
+  dispatchOverride?: (params: {
+    scene: PublicVideoScene;
+    characterRefs: Record<string, string>;
+    audioRefs: Record<string, string>;
+  }) => Promise<void>;
   onDispatched?: () => void;
   // Called with the freshly-created job right after a non-override dispatch
   // succeeds, so the Tools > Video page can show its loading tile in the
@@ -78,26 +84,19 @@ export function VideoChat({
   // here, this chat stays exactly as it was regardless of what happens to
   // the job afterward.
   onJobCreated?: (job: { id: string; status: string }) => void;
-  // Rendered inside the same bordered textarea box, in a grid-cols-[auto_1fr]
-  // layout matching the image tool's format exactly (see video-tool-client.tsx,
-  // which owns the actual upload/registration state) - the whole reason this
-  // exists is so references can be attached up front instead of only via the
-  // LLM asking mid-conversation.
-  referencesPanel?: React.ReactNode;
 } = {}) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [missingState, setMissingState] = useState<MissingState | null>(null);
+  const [unresolvedTags, setUnresolvedTags] = useState<string[] | null>(null);
   const [readyState, setReadyState] = useState<ReadyState | null>(null);
-  const [busyLabel, setBusyLabel] = useState<string | null>(null); // which missing-character action is in flight
   const [dispatching, setDispatching] = useState(false);
   const [dispatched, setDispatched] = useState(false);
   const [videoSettings, setVideoSettings] = useState<VideoSettings>(DEFAULT_VIDEO_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pendingUploadLabel = useRef<string | null>(null);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const settingsPopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,24 +110,62 @@ export function VideoChat({
     return () => document.removeEventListener("mousedown", onClick);
   }, [settingsOpen]);
 
+  function addPicked(picked: PickedMedia[]) {
+    setSlots((prev) => {
+      let nextImageIndex = prev.filter((s) => s.type === "image").length + 1;
+      let nextAudioIndex = prev.filter((s) => s.type === "audio").length + 1;
+      const added: Slot[] = picked.map((p) => {
+        if (p.storageKey && prev.some((s) => s.storageKey === p.storageKey)) {
+          return null as unknown as Slot; // filtered below - already attached
+        }
+        const slot: Slot = {
+          type: p.type,
+          index: p.type === "image" ? nextImageIndex : nextAudioIndex,
+          storageKey: p.storageKey,
+          previewUrl: p.previewUrl,
+        };
+        if (p.type === "image") nextImageIndex++;
+        else nextAudioIndex++;
+        return slot;
+      });
+      return [...prev, ...added.filter(Boolean)];
+    });
+    setPickerOpen(false);
+  }
+
+  function removeSlot(storageKey: string) {
+    // Removing a slot does NOT renumber the remaining ones - a tag the user
+    // already typed (e.g. "@Image2") must keep meaning the same attachment
+    // until they remove or retype it, otherwise an in-progress message's
+    // tags would silently point at something else.
+    setSlots((prev) => prev.filter((s) => s.storageKey !== storageKey));
+  }
+
+  const mentionOptions = slots.map((s) => ({ tag: `${s.type === "image" ? "Image" : "Audio"}${s.index}` }));
+
   async function sendTurn(nextMessages: ChatTurn[]) {
     setSending(true);
-    setMissingState(null);
+    setUnresolvedTags(null);
     setReadyState(null);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "video", messages: nextMessages }),
+        body: JSON.stringify({
+          tool: "video",
+          messages: nextMessages,
+          slots: slots.map((s) => ({ type: s.type, index: s.index, storageKey: s.storageKey })),
+        }),
       });
       const data = (await res.json()) as ChatApiResponse;
 
       if (data.type === "question") {
         setMessages([...nextMessages, { role: "assistant", content: data.message }]);
-      } else if (data.type === "missing_references") {
-        const summary = `I need a reference photo for: ${data.missing.map((m) => m.label).join(", ")}.`;
-        setMessages([...nextMessages, { role: "assistant", content: summary }]);
-        setMissingState({ missing: data.missing, generateCostCredits: data.generateCostCredits });
+      } else if (data.type === "unresolved_tags") {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `These tags don't match anything attached: ${data.tags.map((t) => `@${t}`).join(", ")}` },
+        ]);
       } else if (data.type === "ready") {
         // The LLM never decides duration/aspect ratio/resolution - these are
         // the settings the worker actually reads per-job (graph_builder.py's
@@ -143,7 +180,12 @@ export function VideoChat({
         };
         const summary = `Ready to generate: ${scene.action} (${scene.duration}s, ${data.estimatedCredits} credits).`;
         setMessages([...nextMessages, { role: "assistant", content: summary }]);
-        setReadyState({ scene, characterRefs: data.characterRefs, estimatedCredits: data.estimatedCredits });
+        setReadyState({
+          scene,
+          characterRefs: data.characterRefs,
+          audioRefs: data.audioRefs,
+          estimatedCredits: data.estimatedCredits,
+        });
       } else {
         setMessages([...nextMessages, { role: "assistant", content: data.message }]);
       }
@@ -156,77 +198,17 @@ export function VideoChat({
 
   function handleSend() {
     if (!input.trim() || sending) return;
+
+    const unresolved = findUnresolvedTags(input, slots);
+    if (unresolved.length > 0) {
+      setUnresolvedTags(unresolved);
+      return;
+    }
+
     const nextMessages = [...messages, { role: "user" as const, content: input.trim() }];
     setMessages(nextMessages);
     setInput("");
     void sendTurn(nextMessages);
-  }
-
-  function startUpload(label: string) {
-    pendingUploadLabel.current = label;
-    fileInputRef.current?.click();
-  }
-
-  async function handleFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    const label = pendingUploadLabel.current;
-    e.target.value = "";
-    if (!file || !label) return;
-
-    setBusyLabel(label);
-    try {
-      const key = await uploadFile(file);
-      await registerReference(label, key);
-      // Same conversation, resent unchanged - the server rebuilds its
-      // "existing references" context fresh from the DB each call, so the
-      // LLM now sees this reference and can match it by label this time.
-      await sendTurn(messages);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: `Couldn't save that photo for ${label}. Try again.` }]);
-    } finally {
-      setBusyLabel(null);
-    }
-  }
-
-  async function generateReference(label: string) {
-    setBusyLabel(label);
-    try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "image",
-          input: { mode: "environment", prompt: `A clear, well-lit portrait photo of ${label}.`, width: 768, height: 1344 },
-          createsReferenceLabel: label,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? body.error ?? "Couldn't start generating that reference");
-      }
-      const { job } = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: `Generating a reference photo for ${label}...` }]);
-
-      const outcome = await pollJobUntilDone(job.id);
-      if (outcome === "done") {
-        await sendTurn(messages);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content:
-              outcome === "failed"
-                ? `Generating a reference for ${label} failed. Try uploading a photo instead.`
-                : `Still working on ${label}'s reference photo - send another message once it's ready.`,
-          },
-        ]);
-      }
-    } catch (err) {
-      setMessages((prev) => [...prev, { role: "assistant", content: (err as Error).message }]);
-    } finally {
-      setBusyLabel(null);
-    }
   }
 
   async function handleGenerateVideo() {
@@ -234,14 +216,18 @@ export function VideoChat({
     setDispatching(true);
     try {
       if (dispatchOverride) {
-        await dispatchOverride({ scene: readyState.scene, characterRefs: readyState.characterRefs });
+        await dispatchOverride({
+          scene: readyState.scene,
+          characterRefs: readyState.characterRefs,
+          audioRefs: readyState.audioRefs,
+        });
       } else {
         const res = await fetch("/api/jobs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: "video",
-            input: { scene: readyState.scene, characterRefs: readyState.characterRefs },
+            input: { scene: readyState.scene, characterRefs: readyState.characterRefs, audioRefs: readyState.audioRefs },
           }),
         });
         if (!res.ok) {
@@ -268,41 +254,13 @@ export function VideoChat({
 
   return (
     <div className="flex flex-col gap-3">
-      <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleFileChosen} />
+      <MediaPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} allowAudio onConfirm={addPicked} />
 
       {messages.length > 0 && (
         <div className="flex max-h-80 flex-col gap-2 overflow-y-auto rounded-2xl border border-border bg-card/50 p-4">
           {messages.map((m, i) => (
             <div key={i} className={m.role === "user" ? "self-end rounded-2xl bg-white/10 px-3 py-2 text-sm" : "self-start rounded-2xl bg-white/5 px-3 py-2 text-sm text-zinc-300"}>
               {m.content}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {missingState && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4">
-          {missingState.missing.map((m) => (
-            <div key={m.label} className="flex items-center justify-between gap-3">
-              <span className="text-sm">{m.label}</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busyLabel === m.label}
-                  onClick={() => startUpload(m.label)}
-                  className="rounded-full bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10 disabled:opacity-50"
-                >
-                  Upload a photo
-                </button>
-                <button
-                  type="button"
-                  disabled={busyLabel === m.label}
-                  onClick={() => void generateReference(m.label)}
-                  className="rounded-full bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10 disabled:opacity-50"
-                >
-                  Generate ({missingState.generateCostCredits} credit{missingState.generateCostCredits === 1 ? "" : "s"})
-                </button>
-              </div>
             </div>
           ))}
         </div>
@@ -325,19 +283,63 @@ export function VideoChat({
         </div>
       )}
 
-      {referencesPanel}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-white/20 text-muted-foreground hover:border-white/35 hover:text-foreground"
+          title="Add reference media"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+        {slots.map((s) => (
+          <div key={s.storageKey} className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+            {s.type === "image" && s.previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- presigned/blob URL, not a static asset
+              <img src={s.previewUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[9px] text-zinc-400">Audio</span>
+            )}
+            <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-center text-[8px] text-white">
+              {s.type === "image" ? "Image" : "Audio"}
+              {s.index}
+            </span>
+            <button
+              type="button"
+              onClick={() => removeSlot(s.storageKey)}
+              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-2.5 w-2.5">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
 
-      <textarea
-        rows={2}
+      {unresolvedTags && (
+        <p className="text-xs text-red-400">
+          These tags don&apos;t match anything attached: {unresolvedTags.map((t) => `@${t}`).join(", ")}. Attach the
+          media first or remove the tag.
+        </p>
+      )}
+
+      <MentionTextarea
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(v) => {
+          setInput(v);
+          if (unresolvedTags) setUnresolvedTags(null);
+        }}
+        options={mentionOptions}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSend();
           }
         }}
-        placeholder={dispatched ? "Describe another video" : "Describe your video"}
+        placeholder={dispatched ? "Describe another video (@ to reference attached media)" : "Describe your video (@ to reference attached media)"}
         className="w-full resize-none rounded-2xl border border-white/10 bg-card/70 px-4 py-3 text-sm placeholder:text-muted-foreground backdrop-blur-md focus:outline-none"
       />
 

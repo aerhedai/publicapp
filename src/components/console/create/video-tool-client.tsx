@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { CreationsTabs } from "./creations-tabs";
 import { ToolSelector, type SubMode } from "./tool-selector";
-import { ComingSoon, ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
+import { ComingSoon } from "./reference-panels";
 import { VideoChat } from "./video-chat";
-import { registerCharacterReference } from "@/lib/upload-file";
 import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
 
 const SUB_MODES: SubMode[] = [
@@ -63,38 +62,9 @@ const SUB_MODES: SubMode[] = [
   },
 ];
 
-// MiniMax H3's own cap on reference images (see the video worker's
-// graph_builder.py MAX_REF_IMAGES) - kept in sync manually since the two
-// repos don't share a build.
-const MAX_REFERENCES = 9;
-
 export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const [subMode, setSubMode] = useState("create");
-  const [references, setReferences] = useState<ReferenceSlot[]>([]);
-  const registeredIds = useRef(new Set<string>());
   const { jobs, addOptimistic } = useLiveJobs(initialJobs, "video");
-
-  // Upfront character-reference upload, matching the image tool's format -
-  // registers each upload as a named character_reference the moment it
-  // finishes (same mechanism the chat's own mid-conversation upload uses,
-  // src/lib/upload-file.ts's registerCharacterReference), so the LLM already
-  // knows about it by label the next time the user sends a message. This is
-  // the actual fix for "no way to add references up front" - previously the
-  // only path was answering the LLM's own mid-chat prompt for a missing
-  // character.
-  async function handleReferencesChange(next: ReferenceSlot[]) {
-    setReferences(next);
-    for (const slot of next) {
-      if (slot.storageKey && !registeredIds.current.has(slot.id)) {
-        registeredIds.current.add(slot.id);
-        try {
-          await registerCharacterReference(slot.label, slot.storageKey);
-        } catch {
-          registeredIds.current.delete(slot.id);
-        }
-      }
-    }
-  }
 
   return (
     <div className="relative h-full">
@@ -140,17 +110,7 @@ export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
           <ToolSelector subModes={SUB_MODES} activeSubMode={subMode} onSubModeChange={setSubMode} />
 
           {subMode === "create" ? (
-            <VideoChat
-              onJobCreated={addOptimistic}
-              referencesPanel={
-                <ReferenceUploadPanel
-                  slots={references}
-                  onChange={(next) => void handleReferencesChange(next)}
-                  maxSlots={MAX_REFERENCES}
-                  showLabels
-                />
-              }
-            />
+            <VideoChat onJobCreated={addOptimistic} />
           ) : (
             <div className="rounded-3xl border border-border bg-card p-4">
               <ComingSoon label={SUB_MODES.find((s) => s.key === subMode)?.label ?? subMode} />

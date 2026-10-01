@@ -1,13 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { ImageCreateForm } from "./image-create-form";
 import { VideoChat } from "./video-chat";
-import { ReferenceUploadPanel, type ReferenceSlot } from "./reference-panels";
-import { registerCharacterReference } from "@/lib/upload-file";
 import type { Mode } from "./types";
-
-const MAX_REFERENCES = 9;
 
 // The primary creation UI on Home - mode-switchable between Image and Video.
 // Reuses the exact same components the dedicated Tools pages render
@@ -16,22 +12,6 @@ const MAX_REFERENCES = 9;
 // visiting Tools > Image / Tools > Video directly.
 export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [videoReferences, setVideoReferences] = useState<ReferenceSlot[]>([]);
-  const registeredIds = useRef(new Set<string>());
-
-  async function handleVideoReferencesChange(next: ReferenceSlot[]) {
-    setVideoReferences(next);
-    for (const slot of next) {
-      if (slot.storageKey && !registeredIds.current.has(slot.id)) {
-        registeredIds.current.add(slot.id);
-        try {
-          await registerCharacterReference(slot.label, slot.storageKey);
-        } catch {
-          registeredIds.current.delete(slot.id);
-        }
-      }
-    }
-  }
 
   return (
     <div>
@@ -74,21 +54,7 @@ export function CreationBox({ initialMode = "image" }: { initialMode?: Mode }) {
         </button>
       </div>
 
-      {mode === "image" ? (
-        <ImageCreateForm />
-      ) : (
-        <VideoChat
-          referencesPanel={
-            <ReferenceUploadPanel
-              subtitle="Use images as character references"
-              slots={videoReferences}
-              onChange={(next) => void handleVideoReferencesChange(next)}
-              maxSlots={MAX_REFERENCES}
-              showLabels
-            />
-          }
-        />
-      )}
+      {mode === "image" ? <ImageCreateForm /> : <VideoChat />}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import type { PublicVideoScene } from "@/lib/scene-validation";
 export interface SceneDraft {
   scene: PublicVideoScene;
   characterRefs: Record<string, string>;
+  audioRefs: Record<string, string>;
 }
 
 export interface StitchJobInput {
@@ -60,7 +61,7 @@ export async function advanceProject(projectId: string): Promise<void> {
     const result = await createGenerationJob({
       userId: project.userId,
       type: "video",
-      input: { scene: draft.scene, characterRefs: draft.characterRefs },
+      input: { scene: draft.scene, characterRefs: draft.characterRefs, audioRefs: draft.audioRefs },
       projectClipId: nextToGenerate.id,
     });
     if (!result.ok) {

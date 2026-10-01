@@ -81,6 +81,13 @@ const ALLOWED_UPLOAD_TYPES = new Set([
   "image/webp",
   "video/mp4",
   "video/quicktime",
+  // Audio reference uploads (@Audio1 tagging - see
+  // src/lib/scene-validation.ts's resolveReferenceTags and the video
+  // worker's ref_audios wiring).
+  "audio/wav",
+  "audio/x-wav",
+  "audio/mpeg",
+  "audio/mp4",
 ]);
 
 const MAX_UPLOAD_BYTES = 200 * 1024 * 1024; // 200MB

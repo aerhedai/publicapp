@@ -38,12 +38,15 @@ const SUB_MODES: SubMode[] = [
 
 export function ImageToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const [subMode, setSubMode] = useState("create");
-  const { jobs, addOptimistic } = useLiveJobs(initialJobs, "image");
+  const { jobs, addOptimistic, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs, "image");
 
   return (
     <div className="relative h-full">
       <CreationsTabs
         jobs={jobs}
+        onDeleteJob={removeJob}
+        notices={notices}
+        onDismissNotice={dismissNotice}
         contentBottomPadding
         extraTabs={[
           {

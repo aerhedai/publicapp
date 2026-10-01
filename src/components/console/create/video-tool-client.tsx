@@ -64,12 +64,15 @@ const SUB_MODES: SubMode[] = [
 
 export function VideoToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
   const [subMode, setSubMode] = useState("create");
-  const { jobs, addOptimistic } = useLiveJobs(initialJobs, "video");
+  const { jobs, addOptimistic, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs, "video");
 
   return (
     <div className="relative h-full">
       <CreationsTabs
         jobs={jobs}
+        onDeleteJob={removeJob}
+        notices={notices}
+        onDismissNotice={dismissNotice}
         contentBottomPadding
         extraTabs={[
           {

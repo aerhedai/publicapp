@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 import { ComingSoon } from "./reference-panels";
-import { OutputPreview } from "./output-preview";
+import type { JobNotice } from "@/lib/use-live-jobs";
 
 interface JobRow {
   id: string;
@@ -11,6 +11,142 @@ interface JobRow {
   createdAt: Date;
   type?: "image" | "video" | "stitch";
   outputStorageKey?: string | null;
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+      <path d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+      <path
+        d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * A completed creation's tile: the media fills the entire fixed-size tile
+ * (no surrounding card chrome - status pill/date used to sit above a small
+ * preview, now the media itself IS the tile), with a hover overlay for
+ * download/delete. Fetches its own presigned URL once (same mechanism the
+ * old output-preview.tsx used), never rendered for an active or failed job.
+ */
+function DoneTile({ job, onDelete }: { job: JobRow; onDelete: (jobId: string) => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/jobs/${job.id}/output`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        if (!cancelled) setUrl(data.url);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [job.id]);
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, { method: "DELETE" });
+      if (res.ok) onDelete(job.id);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (error) return null;
+
+  return (
+    <div className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-card">
+      {!url ? (
+        <div className="h-full w-full animate-pulse bg-white/5" />
+      ) : job.type === "image" ? (
+        // eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL, not a static asset
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <video src={url} className="h-full w-full object-cover" muted loop playsInline onMouseEnter={(e) => void e.currentTarget.play()} onMouseLeave={(e) => e.currentTarget.pause()} />
+      )}
+
+      {url && (
+        <div className="absolute inset-0 flex items-center justify-center gap-4 bg-black/0 opacity-0 transition-all duration-150 group-hover:bg-black/55 group-hover:opacity-100">
+          <a
+            href={url}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+            title="Download"
+          >
+            <DownloadIcon />
+          </a>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-red-500/80 disabled:opacity-50"
+            title="Delete"
+          >
+            <TrashIcon />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActiveTile({ job }: { job: JobRow }) {
+  const config = JOB_STATUS_CONFIG[job.status];
+  return (
+    <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-4">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+      <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>{config.label}</span>
+      {config.detail && <p className="text-center text-[11px] text-muted-foreground">{config.detail}</p>}
+    </div>
+  );
+}
+
+function NoticeStack({ notices, onDismiss }: { notices: JobNotice[]; onDismiss: (id: string) => void }) {
+  useEffect(() => {
+    if (notices.length === 0) return;
+    const timers = notices.map((n) => setTimeout(() => onDismiss(n.id), 5000));
+    return () => timers.forEach(clearTimeout);
+  }, [notices, onDismiss]);
+
+  if (notices.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {notices.map((n) => (
+        <div key={n.id} className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-neutral-900 px-4 py-2.5 text-sm text-red-300 shadow-lg">
+          {n.message}
+          <button type="button" onClick={() => onDismiss(n.id)} className="text-red-300/60 hover:text-red-300">
+            <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // The top tab bar seen on every Tools page (Creations/Templates/...).
@@ -23,6 +159,9 @@ export function CreationsTabs({
   extraTabs,
   greeting,
   contentBottomPadding,
+  onDeleteJob,
+  notices = [],
+  onDismissNotice,
 }: {
   jobs: JobRow[];
   extraTabs: { key: string; label: string; icon: React.ReactNode }[];
@@ -31,11 +170,16 @@ export function CreationsTabs({
   // borderless compose area over the bottom of the grid (image-tool-client.tsx
   // etc.) - without it the last row of tiles would sit hidden underneath it.
   contentBottomPadding?: boolean;
+  onDeleteJob?: (jobId: string) => void;
+  notices?: JobNotice[];
+  onDismissNotice?: (id: string) => void;
 }) {
   const [tab, setTab] = useState("creations");
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {onDismissNotice && <NoticeStack notices={notices} onDismiss={onDismissNotice} />}
+
       {/* Static - shrink-0, not part of the scrolling region below, so it
           never moves regardless of how far the grid is scrolled. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-8 py-3">
@@ -94,33 +238,9 @@ export function CreationsTabs({
           ) : (
             <div className="grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3">
               {jobs.map((job) => {
-                const config = JOB_STATUS_CONFIG[job.status];
                 const isActive = job.status === "queued" || job.status === "warming" || job.status === "processing";
-                return (
-                  <div key={job.id} className="rounded-2xl border border-border bg-card p-4">
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${config.className}`}>
-                      {config.label}
-                    </span>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {/* Explicit locale + timeZone: toLocaleDateString() with
-                          no args uses the runtime's default locale, which
-                          differs between the server (Node/ICU default) and
-                          the visitor's browser - same Date, different
-                          formatted string, a real hydration-mismatch
-                          (React #418) confirmed live. */}
-                      {job.createdAt.toLocaleDateString("en-US", { timeZone: "UTC" })}
-                    </p>
-                    {job.status === "done" && job.outputStorageKey && job.type && (
-                      <OutputPreview jobId={job.id} type={job.type} />
-                    )}
-                    {isActive && (
-                      <div className="mt-2 flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-lg bg-white/5">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
-                        {config.detail && <p className="px-3 text-center text-[10px] text-muted-foreground">{config.detail}</p>}
-                      </div>
-                    )}
-                  </div>
-                );
+                if (isActive) return <ActiveTile key={job.id} job={job} />;
+                return <DoneTile key={job.id} job={job} onDelete={(id) => onDeleteJob?.(id)} />;
               })}
             </div>
           )

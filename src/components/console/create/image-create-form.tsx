@@ -3,9 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MediaPickerModal, type PickedMedia } from "./media-picker-modal";
+import { MentionTextarea } from "./mention-textarea";
 import { ImageSettingsPopover } from "./settings-popover";
 import { DEFAULT_IMAGE_SETTINGS, type ImageSettings } from "./types";
 import { computeImageDimensions } from "@/lib/pixel-presets";
+
+// Unlike the video worker, Flux.2 Klein's graph never gives the model a
+// textual <Picture i>-style marker for each reference - every attached
+// image is always composed in, purely by attachment order (see
+// comfyui-flux2-klein-worker/graph_builder.py's own docstring). So
+// @Image1/@Image2 here is only a UI authoring aid (e.g. "put @Image1's
+// outfit on @Image2") - never a selection mechanism like the video tool's
+// tags - and is stripped from the actual prompt text before dispatch, since
+// the text encoder was never trained to understand these tokens.
+const MENTION_TAG_PATTERN = /@Image\d+\b/g;
 
 // Flux.2 Klein's own cap on multi-reference composition (see
 // comfyui-flux2-klein-worker/graph_builder.py's MAX_REF_IMAGES) - kept in
@@ -77,6 +88,10 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
     try {
       const { width, height } = computeImageDimensions(settings.aspectRatio, settings.resolution);
       const characterRefs = Object.fromEntries(references.map((r, i) => [`Image${i + 1}`, r.storageKey]));
+      // Strip @Image1-style mention tags - purely a compose-box authoring
+      // aid here (see MENTION_TAG_PATTERN's own comment), never sent to the
+      // worker's text encoder.
+      const cleanPrompt = prompt.replace(MENTION_TAG_PATTERN, "").replace(/\s+/g, " ").trim();
 
       const res = await fetch("/api/jobs", {
         method: "POST",
@@ -85,7 +100,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
           type: "image",
           input: {
             mode: references.length > 0 ? "storyboard" : "environment",
-            prompt: prompt.trim(),
+            prompt: cleanPrompt,
             characterRefs: references.length > 0 ? characterRefs : undefined,
             width,
             height,
@@ -145,11 +160,12 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
         ))}
       </div>
 
-      <textarea
+      <MentionTextarea
         rows={2}
         value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Describe your image"
+        onChange={setPrompt}
+        options={references.map((_, i) => ({ tag: `Image${i + 1}` }))}
+        placeholder={references.length > 0 ? "Describe your image (@ to reference an attached image)" : "Describe your image"}
         className="w-full resize-none rounded-2xl border border-white/10 bg-card/70 px-4 py-3 text-sm placeholder:text-muted-foreground backdrop-blur-md focus:outline-none"
       />
 

@@ -62,10 +62,21 @@ export function AuthCard({
           own internal padding provides. */}
       <div className="flex flex-col items-center justify-center px-8 py-12 md:px-12">
         <div className="w-full max-w-sm">
+          {/* Both force and fallback redirect props set to the same target -
+              confirmed live (2026-10-02) that forceRedirectUrl alone wasn't
+              landing on /console with routing="hash" (ended up back on "/"
+              instead, a known gotcha with hash-routed/modal-embedded Clerk
+              components per community reports - Clerk's own actual redirect-
+              resolution logic ships in clerk-js, loaded from their CDN at
+              runtime, not inspectable locally to confirm the exact internal
+              reason). Both props are read in the same priority chain
+              (confirmed in @clerk/shared's bundled redirectUrls.js), so
+              setting both is strictly safe regardless of which one hash
+              routing actually honors. */}
           {mode === "sign-in" ? (
-            <SignIn routing="hash" forceRedirectUrl="/console" />
+            <SignIn routing="hash" forceRedirectUrl="/console" fallbackRedirectUrl="/console" />
           ) : (
-            <SignUp routing="hash" forceRedirectUrl="/console" />
+            <SignUp routing="hash" forceRedirectUrl="/console" fallbackRedirectUrl="/console" />
           )}
         </div>
 

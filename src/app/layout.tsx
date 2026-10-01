@@ -26,9 +26,24 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
 });
 
+const APP_URL = process.env.APP_BASE_URL ?? "https://aerhed.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: "VidGen",
   description: "Turn a prompt into a scene.",
+  openGraph: {
+    title: "VidGen",
+    description: "Turn a prompt into a scene.",
+    url: APP_URL,
+    siteName: "VidGen",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "VidGen",
+    description: "Turn a prompt into a scene.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

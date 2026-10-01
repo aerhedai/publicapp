@@ -1,4 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { DeleteAccountButton } from "@/components/console/account/delete-account-button";
 
 export default async function AccountPage() {
   const { userId } = await auth();
@@ -29,6 +30,13 @@ export default async function AccountPage() {
       <div className="rounded-3xl border border-border bg-card p-6">
         <h2 className="text-sm font-medium text-muted-foreground">Email</h2>
         <p className="mt-2 text-sm">{user?.primaryEmailAddress?.emailAddress ?? "—"}</p>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-6">
+        <h2 className="text-sm font-medium text-muted-foreground">Danger zone</h2>
+        <div className="mt-3">
+          <DeleteAccountButton />
+        </div>
       </div>
     </div>
   );

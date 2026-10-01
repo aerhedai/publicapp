@@ -23,6 +23,18 @@ export const generalApiLimit = new Ratelimit({
   prefix: "ratelimit:general",
 });
 
+// A third, hourly tier - distinct from expensiveActionLimit's per-minute
+// burst control. That one stops a tight request loop; this one caps total
+// generation volume per user per hour, so a funded account can't sequentially
+// burn credits indefinitely just because each individual request is spaced
+// out enough to clear the per-minute window. Checked once per job creation,
+// not per request, in createGenerationJob (src/lib/create-job.ts).
+export const jobVelocityLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "1 h"),
+  prefix: "ratelimit:job-velocity",
+});
+
 export async function checkRateLimit(limiter: Ratelimit, userId: string) {
   const { success, remaining, reset } = await limiter.limit(userId);
   return { allowed: success, remaining, reset };

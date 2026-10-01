@@ -75,32 +75,13 @@ const TOOL_ITEMS = [
       />
     ),
   },
-  {
-    href: "/console/tools/voice",
-    label: "Voice",
-    icon: (
-      <path
-        d="M5 10v4M9 6v12M13 4v16M17 8v8M21 11v2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
-  {
-    href: "/console/tools/clone",
-    label: "Clone",
-    icon: (
-      <path
-        d="M8 8h10v10H8V8zM4 4h10v10H4V4z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ),
-  },
+  // Voice and Clone are deliberately NOT linked here - both are stubs with
+  // zero backend (voice-tool-client.tsx has a hardcoded empty job list, no
+  // `voice` job type exists in the DB schema, and clone has an explicit
+  // "out of scope, not wired up yet" comment). A live nav item that does
+  // nothing is worse than no nav item - same reasoning the other stub tools
+  // (Artwork, Edit/Extend/Motion) already follow by not being in this list.
+  // The routes still exist for later; just not advertised until built.
 ];
 
 function NavLink({

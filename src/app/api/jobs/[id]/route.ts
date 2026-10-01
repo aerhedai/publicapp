@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { deleteUserObjects } from "@/storage/r2";
+import { checkRateLimit, generalApiLimit } from "@/lib/rate-limit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
@@ -38,6 +39,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { allowed } = await checkRateLimit(generalApiLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   const { id } = await params;

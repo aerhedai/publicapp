@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { subscriptions, users } from "@/db/schema";
 import { getStripeClient } from "@/lib/stripe";
 import { getPricingTier } from "@/lib/pricing-tiers";
+import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 
 function getAppBaseUrl(): string {
   if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL;
@@ -16,6 +17,14 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Tight limit here specifically - unlike the general API limit, this one
+  // guards against checkout-session spam (each call creates a real Stripe
+  // Checkout Session), not just DB load.
+  const { allowed } = await checkRateLimit(expensiveActionLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   const body = (await req.json().catch(() => null)) as { tierId?: string; billingMode?: string } | null;

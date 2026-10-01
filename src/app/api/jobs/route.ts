@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     createsReferenceLabel: body.createsReferenceLabel,
   });
   if (!result.ok) {
-    const status = result.reason === "concurrent_limit" ? 429 : 400;
+    const status = result.reason === "concurrent_limit" || result.reason === "velocity_limit" ? 429 : 400;
     return NextResponse.json({ error: result.reason, message: result.message }, { status });
   }
 

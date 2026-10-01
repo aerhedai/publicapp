@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { projects, projectClips, generationJobs } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { tryAdvanceProject } from "@/lib/projects";
+import { checkRateLimit, generalApiLimit } from "@/lib/rate-limit";
 
 // Adds one clip to the end of a project - either a slot to author a new
 // scene into later (source="generate", PATCH .../clips/[clipId] fills it
@@ -15,6 +16,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { allowed } = await checkRateLimit(generalApiLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
   const { id: projectId } = await params;
 
   const [project] = await db

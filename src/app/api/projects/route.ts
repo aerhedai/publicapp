@@ -4,11 +4,17 @@ import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { ensureUserRow } from "@/lib/ensure-user";
+import { checkRateLimit, generalApiLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { allowed } = await checkRateLimit(generalApiLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   const body = await req.json().catch(() => null);

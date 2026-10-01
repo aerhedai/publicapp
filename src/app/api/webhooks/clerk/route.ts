@@ -2,9 +2,13 @@ import { headers } from "next/headers";
 import { Webhook } from "svix";
 import type { WebhookEvent } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
-import { users, uploads, generationJobs } from "@/db/schema";
+import { users, uploads, generationJobs, creditLedger } from "@/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { deleteUserObjects } from "@/storage/r2";
+
+// Placeholder amount, same convention as pricing-tiers.ts's dollar figures -
+// enough to try one video (5 credits) or a few images.
+const SIGNUP_BONUS_CREDITS = 5;
 
 // Verifies the request actually came from Clerk before touching the
 // database - this endpoint is public (see src/proxy.ts's public-route
@@ -48,6 +52,15 @@ export async function POST(req: Request) {
       const { id, email_addresses } = event.data;
       const email = email_addresses[0]?.email_address ?? "";
       await db.insert(users).values({ id, email }).onConflictDoNothing();
+      // A small free grant so a brand-new user can try the product before
+      // ever paying - there was previously no way for any user to ever
+      // acquire credits at all. externalRef + the unique index on it
+      // (schema.ts) makes this idempotent against a redelivered webhook,
+      // the same pattern the Stripe webhook uses for purchases.
+      await db
+        .insert(creditLedger)
+        .values({ userId: id, delta: SIGNUP_BONUS_CREDITS, reason: "signup_bonus", externalRef: `signup:${id}` })
+        .onConflictDoNothing({ target: creditLedger.externalRef });
       break;
     }
     case "user.updated": {

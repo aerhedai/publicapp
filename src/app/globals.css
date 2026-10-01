@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
+/* Dark-first: this product's actual design direction (cinematic, bold,
+   photographic) reads correctly on dark, not as a fallback from light mode.
+   See src/components/landing/ for where these get used. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  /* Brighter near-white (was #fafafa) - text was reading slightly dim
+     against this dark palette, confirmed and requested directly. */
+  --foreground: #ffffff;
+  --muted: #171717;
+  --muted-foreground: #a1a1aa;
+  --border: #2e2e2e;
+  /* Widened from #111111 - cards need to actually read as elevated above
+     the page background, not nearly flat against it. */
+  --card: #161616;
+  --card-foreground: #ffffff;
+
+  /* The one signature accent, used sparingly (a highlighted word, a badge,
+     a button) - never as a wallpaper. Cyan->indigo, deliberately distinct
+     from both the generic "AI purple" default and this reference's own
+     orange/pink brand identity. */
+  --accent-from: #22d3ee;
+  --accent-to: #6366f1;
+  /* Solid counterpart for places that need one flat color (focus rings,
+     active indicators) rather than the diagonal two-stop gradient - same
+     color as the gradient's own end stop, not a new hue. */
+  --accent: #6366f1;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-accent-from: var(--accent-from);
+  --color-accent-to: var(--accent-to);
+  --color-accent: var(--accent);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-bricolage);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Utility for the one signature gradient accent - apply to a word/phrase,
+   a badge, or a button, never a full section background. */
+.text-gradient-accent {
+  background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Entrance-only animation for popovers/dropdowns mounted via `{open && <div>}` -
+   no library, no exit transition (that needs delayed-unmount state, not
+   worth the complexity for a popover). Applied as a plain class, not
+   data-state driven - this only ever plays once, on mount. */
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-popover-in {
+  animation: popover-in 120ms ease-out;
 }

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { assertOwnsKey, createPresignedDownload } from "@/storage/r2";
+import { assertOwnsKey, createPresignedDownload, getR2CredentialsForWorker } from "@/storage/r2";
 
 // Lazy-init discipline, same reasoning as src/db/client.ts/src/storage/r2.ts -
 // env vars read inside each function, never at module-import time (this broke
@@ -11,11 +11,19 @@ function getApiKey(): string {
   return process.env.RUNPOD_API_KEY;
 }
 
-function getEndpointId(): string {
-  if (!process.env.RUNPOD_ENDPOINT_ID) {
-    throw new Error("RUNPOD_ENDPOINT_ID is not set");
+export type JobType = "image" | "video";
+
+// Two separate RunPod endpoints, not one shared image/pod: video (MiniMax H3)
+// needs a much bigger GPU tier and a ~39GB volume; image (Flux2) is lighter
+// and shouldn't drag either into every cold start. Each type gets its own
+// endpoint id, independently sized/scaled.
+function getEndpointId(type: JobType): string {
+  const envVar = type === "video" ? "RUNPOD_ENDPOINT_ID_VIDEO" : "RUNPOD_ENDPOINT_ID_IMAGE";
+  const value = process.env[envVar];
+  if (!value) {
+    throw new Error(`${envVar} is not set`);
   }
-  return process.env.RUNPOD_ENDPOINT_ID;
+  return value;
 }
 
 function getWebhookSecret(): string {
@@ -35,8 +43,8 @@ function getAppBaseUrl(): string {
   throw new Error("APP_BASE_URL is not set and VERCEL_URL is unavailable");
 }
 
-function getBaseUrl(): string {
-  return `https://api.runpod.ai/v2/${getEndpointId()}`;
+function getBaseUrl(type: JobType): string {
+  return `https://api.runpod.ai/v2/${getEndpointId(type)}`;
 }
 
 /** Distinguishes transient failures (network/5xx - safe to leave the job
@@ -52,29 +60,100 @@ export class RunpodDispatchError extends Error {
 }
 
 // Matches handler.py's job contract exactly (pipeline/webapp/cloud/handler.py):
-// {userId, scene, characterRefs: {char_id: presigned_get_url}}. `input`'s
-// characterRefs here holds R2 *storage keys* (server-owned, checked via
-// assertOwnsKey), not URLs - buildWorkflowPayload presigns them into GET URLs
-// right before dispatch, never earlier.
-export interface JobInput {
+// {userId, scene, characterRefs: {char_id: presigned_get_url}, audioRefs: {audio_id: presigned_get_url}}.
+// `input`'s characterRefs/audioRefs here hold R2 *storage keys* (server-owned,
+// checked via assertOwnsKey), not URLs - buildWorkflowPayload presigns them
+// into GET URLs right before dispatch, never earlier. Keys are the literal
+// @Image1/@Audio1 tag strings (see src/lib/scene-validation.ts's
+// resolveReferenceTags) - both the scene's characters/audio_refs entries and
+// the worker's own <Picture i>/<Audio i> prompt labels.
+export interface VideoJobInput {
   scene: unknown;
   characterRefs?: Record<string, string>;
+  audioRefs?: Record<string, string>;
 }
 
-export async function buildWorkflowPayload(params: {
-  userId: string;
-  input: JobInput;
-}): Promise<{ input: { userId: string; scene: unknown; characterRefs: Record<string, string> } }> {
-  const { userId, input } = params;
-  const characterRefs: Record<string, string> = {};
-  for (const [charId, key] of Object.entries(input.characterRefs ?? {})) {
+// Matches handler_image.py's job contract (pipeline/webapp/cloud/handler_image.py),
+// mirroring flux_graph_builder.py's three graph functions directly: "environment"
+// needs neither characterRefs nor styleRef, "storyboard" needs characterRefs (1+
+// character stills), "character" needs both characterRefs (exactly one entry,
+// the character image) and styleRef. Same storage-key-not-URL convention as video.
+export interface ImageJobInput {
+  mode: "environment" | "storyboard" | "character";
+  prompt: string;
+  characterRefs?: Record<string, string>;
+  styleRef?: string;
+  width?: number;
+  height?: number;
+  // Optional per-job overrides of the worker's own distilled-template
+  // defaults (comfyui-flux2-klein-worker/graph_builder.py's DEFAULT_STEPS/
+  // DEFAULT_CFG/DEFAULT_SAMPLER) - omitted means "use the worker's default".
+  steps?: number;
+  cfg?: number;
+  seed?: number;
+  sampler?: string;
+}
+
+export type JobInput = VideoJobInput | ImageJobInput;
+
+async function presignCharacterRefs(
+  userId: string,
+  characterRefs: Record<string, string> | undefined
+): Promise<Record<string, string>> {
+  const presigned: Record<string, string> = {};
+  for (const [charId, key] of Object.entries(characterRefs ?? {})) {
     assertOwnsKey(userId, key);
     // Longer than the uploads route's default (600s, not 300s) - has to
     // survive cold-start + fetch time inside the worker, not just an
     // instant client PUT.
-    characterRefs[charId] = await createPresignedDownload(key, 600);
+    presigned[charId] = await createPresignedDownload(key, 600);
   }
-  return { input: { userId, scene: input.scene, characterRefs } };
+  return presigned;
+}
+
+export async function buildWorkflowPayload(params: {
+  userId: string;
+  type: JobType;
+  input: JobInput;
+}): Promise<{ input: Record<string, unknown> }> {
+  const { userId, type, input } = params;
+
+  // Passed through so the worker uploads its output to whichever bucket
+  // actually matches the environment that dispatched this job, not whatever
+  // bucket is baked into the endpoint's own fixed config - see
+  // getR2CredentialsForWorker's own comment for why this exists.
+  const r2 = getR2CredentialsForWorker();
+
+  if (type === "video") {
+    const videoInput = input as VideoJobInput;
+    const characterRefs = await presignCharacterRefs(userId, videoInput.characterRefs);
+    const audioRefs = await presignCharacterRefs(userId, videoInput.audioRefs);
+    return { input: { userId, scene: videoInput.scene, characterRefs, audioRefs, r2 } };
+  }
+
+  const imageInput = input as ImageJobInput;
+  const characterRefs = await presignCharacterRefs(userId, imageInput.characterRefs);
+  let styleRef: string | undefined;
+  if (imageInput.styleRef) {
+    assertOwnsKey(userId, imageInput.styleRef);
+    styleRef = await createPresignedDownload(imageInput.styleRef, 600);
+  }
+  return {
+    input: {
+      userId,
+      mode: imageInput.mode,
+      prompt: imageInput.prompt,
+      characterRefs,
+      styleRef,
+      width: imageInput.width,
+      height: imageInput.height,
+      steps: imageInput.steps,
+      cfg: imageInput.cfg,
+      seed: imageInput.seed,
+      sampler: imageInput.sampler,
+      r2,
+    },
+  };
 }
 
 function buildWebhookUrl(jobId: string): string {
@@ -99,13 +178,14 @@ function buildWebhookUrl(jobId: string): string {
 export async function dispatchJob(params: {
   jobId: string;
   userId: string;
+  type: JobType;
   input: JobInput;
 }): Promise<{ runpodJobId: string }> {
   const payload = await buildWorkflowPayload(params);
 
   let res: Response;
   try {
-    res = await fetch(`${getBaseUrl()}/run`, {
+    res = await fetch(`${getBaseUrl(params.type)}/run`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${getApiKey()}`,
@@ -147,8 +227,8 @@ export interface RunpodJobStatus {
 
 // Only used by the stale-job sweep, never the happy path (that's the
 // webhook's job).
-export async function getJobStatus(runpodJobId: string): Promise<RunpodJobStatus> {
-  const res = await fetch(`${getBaseUrl()}/status/${runpodJobId}`, {
+export async function getJobStatus(type: JobType, runpodJobId: string): Promise<RunpodJobStatus> {
+  const res = await fetch(`${getBaseUrl(type)}/status/${runpodJobId}`, {
     headers: { Authorization: `Bearer ${getApiKey()}` },
   });
   if (res.status === 404) {
@@ -164,8 +244,8 @@ export async function getJobStatus(runpodJobId: string): Promise<RunpodJobStatus
   return res.json();
 }
 
-export async function cancelJob(runpodJobId: string): Promise<void> {
-  const res = await fetch(`${getBaseUrl()}/cancel/${runpodJobId}`, {
+export async function cancelJob(type: JobType, runpodJobId: string): Promise<void> {
+  const res = await fetch(`${getBaseUrl(type)}/cancel/${runpodJobId}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getApiKey()}` },
   });

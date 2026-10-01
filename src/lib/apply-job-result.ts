@@ -1,9 +1,12 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { generationJobs } from "@/db/schema";
+import { generationJobs, characterReferences, projectClips } from "@/db/schema";
 import { CREDIT_COST_BY_TYPE, confirmCredits, releaseCredits } from "@/lib/credits";
 import { releaseGlobalSlot } from "@/lib/concurrency";
+import { advanceProject, finalizeStitchJob } from "@/lib/projects";
 import type { RunpodJobStatus } from "@/lib/runpod";
+import { checkImageOutputSafety } from "@/lib/output-moderation";
+import { createPresignedDownload, deleteUserObjects } from "@/storage/r2";
 
 /**
  * Applies a RunPod job's terminal result to our row - shared by the webhook
@@ -31,7 +34,37 @@ export async function applyRunpodResult(
     const errorMessage = output?.error ?? `RunPod job ended with status ${payload.status}`;
     await releaseCredits({ jobId: job.id, userId: job.userId, estimatedCredits: cost, error: errorMessage });
     await releaseGlobalSlot();
+    if (job.type === "stitch") {
+      await finalizeStitchJob({ id: job.id, status: "failed" });
+    } else {
+      await advanceProjectForJob(job.projectClipId);
+    }
     return;
+  }
+
+  // Output-side moderation - only for images (see output-moderation.ts's own
+  // docstring on why video/stitch aren't covered). A second, separate gate
+  // from the generic failure check above: the job succeeded at the RunPod
+  // level, but its rendered output still needs to clear this before "done"
+  // is allowed to mean "shown to the user".
+  if (job.type === "image") {
+    const previewUrl = await createPresignedDownload(output.outputStorageKey!, 300);
+    const moderation = await checkImageOutputSafety(previewUrl);
+    if (!moderation.allowed) {
+      await releaseCredits({
+        jobId: job.id,
+        userId: job.userId,
+        estimatedCredits: cost,
+        error: moderation.reason ?? "Blocked by output safety check",
+      });
+      await releaseGlobalSlot();
+      // Already uploaded to R2 by the worker before this check ran (unlike
+      // an ordinary generation failure, which never produces an object) -
+      // delete it rather than leaving a flagged image sitting in the bucket.
+      await deleteUserObjects(job.userId, [output.outputStorageKey!]);
+      await advanceProjectForJob(job.projectClipId);
+      return;
+    }
   }
 
   // reserveLedgerId is guaranteed non-null here - a job can only reach
@@ -47,5 +80,35 @@ export async function applyRunpodResult(
       updatedAt: new Date(),
     })
     .where(eq(generationJobs.id, job.id));
+
+  // This job's real purpose was minting a reusable reference photo (the
+  // "generate a reference for N credits" flow), not just producing a normal
+  // user-facing output - register it in the shared library so it's usable by
+  // future image/video requests without re-uploading or regenerating.
+  if (job.createsReferenceLabel) {
+    await db.insert(characterReferences).values({
+      userId: job.userId,
+      label: job.createsReferenceLabel,
+      storageKey: output.outputStorageKey!, // guaranteed non-null - `failed` already checked this above
+      source: "generated",
+      sourceJobId: job.id,
+    });
+  }
+
   await releaseGlobalSlot();
+  if (job.type === "stitch") {
+    await finalizeStitchJob({ id: job.id, status: "done" });
+  } else {
+    await advanceProjectForJob(job.projectClipId);
+  }
+}
+
+/** Resolves a job's projectClipId to its project and advances that
+ * project's state machine - a no-op for the (most common) standalone job
+ * that isn't part of a project. */
+async function advanceProjectForJob(projectClipId: string | null): Promise<void> {
+  if (!projectClipId) return;
+  const [clip] = await db.select().from(projectClips).where(eq(projectClips.id, projectClipId));
+  if (!clip) return;
+  await advanceProject(clip.projectId);
 }

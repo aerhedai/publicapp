@@ -16,6 +16,7 @@ import { applyRunpodResult } from "@/lib/apply-job-result";
 const STALE_THRESHOLD_S_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
   image: 15 * 60,
   video: 45 * 60,
+  stitch: 5 * 60, // ffmpeg concat of a few short clips is seconds of work - generous ceiling regardless
 };
 
 const BATCH_SIZE = 10;
@@ -59,6 +60,18 @@ export async function GET(req: Request) {
       continue;
     }
 
+    if (job.type === "stitch") {
+      // Never gets a runpodJobId - it doesn't dispatch to RunPod at all
+      // (src/lib/stitch.ts runs in-process). Reaching this sweep means the
+      // ffmpeg run crashed or the function was killed mid-flight without
+      // ever calling applyRunpodResult - fail it directly, no RunPod calls
+      // to make. The user re-triggers the stitch from the project UI.
+      await applyRunpodResult(job, { id: job.id, status: "FAILED", output: { error: "stitch_timed_out" } });
+      results.push({ jobId: job.id, outcome: "stitch_timed_out" });
+      console.error(`[cron/sweep-stale] stitch job ${job.id} timed out after ${Math.round(ageS)}s with no result`);
+      continue;
+    }
+
     if (!job.runpodJobId) {
       // Shouldn't happen (warming/processing implies a dispatch happened),
       // but never let a row with nothing to poll block the batch.
@@ -67,7 +80,7 @@ export async function GET(req: Request) {
     }
 
     try {
-      const status = await getJobStatus(job.runpodJobId);
+      const status = await getJobStatus(job.type, job.runpodJobId);
       const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
 
       if (status.status === "COMPLETED" || status.status === "FAILED") {
@@ -89,7 +102,7 @@ export async function GET(req: Request) {
       } else {
         // Still not terminal despite exceeding this type's own worst-case
         // runtime budget - genuinely stuck, not just a slow webhook.
-        await cancelJob(job.runpodJobId);
+        await cancelJob(job.type, job.runpodJobId);
         await releaseCredits({
           jobId: job.id,
           userId: job.userId,

@@ -39,7 +39,7 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-4">
           <div>
             <span className="font-display text-lg font-semibold tracking-tight">
-              VidGen
+              Curealo
             </span>
           </div>
           {COLUMNS.map((col) => (
@@ -65,7 +65,7 @@ export function Footer() {
         </div>
 
         <p className="mt-12 text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} VidGen. All rights reserved.
+          &copy; {new Date().getFullYear()} Curealo. All rights reserved.
         </p>
       </div>
     </footer>

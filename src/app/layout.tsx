@@ -27,22 +27,22 @@ const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
 });
 
-const APP_URL = process.env.APP_BASE_URL ?? "https://aerhed.com";
+const APP_URL = process.env.APP_BASE_URL ?? "https://curealo.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
-  title: "VidGen",
+  title: "Curealo",
   description: "Turn a prompt into a scene.",
   openGraph: {
-    title: "VidGen",
+    title: "Curealo",
     description: "Turn a prompt into a scene.",
     url: APP_URL,
-    siteName: "VidGen",
+    siteName: "Curealo",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "VidGen",
+    title: "Curealo",
     description: "Turn a prompt into a scene.",
   },
 };

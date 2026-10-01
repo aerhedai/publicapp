@@ -6,9 +6,11 @@ import { users, uploads, generationJobs, creditLedger } from "@/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { deleteUserObjects } from "@/storage/r2";
 
-// Placeholder amount, same convention as pricing-tiers.ts's dollar figures -
-// enough to try one video (5 credits) or a few images.
-const SIGNUP_BONUS_CREDITS = 5;
+// Real number, not a placeholder - at real measured cost (~$0.011/video,
+// ~$0.001/image, see credits.ts) 50 free credits costs under $0.20 worst
+// case (all video), cheap enough to be genuinely generous for acquisition:
+// ~2-3 free videos or up to 50 free images to actually try the product.
+const SIGNUP_BONUS_CREDITS = 50;
 
 // Verifies the request actually came from Clerk before touching the
 // database - this endpoint is public (see src/proxy.ts's public-route

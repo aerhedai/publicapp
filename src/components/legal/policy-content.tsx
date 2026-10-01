@@ -2,10 +2,17 @@
 // auto-refund-on-failure, the real subprocessor list, the content policy
 // that actually runs in content-policy.ts/output-moderation.ts,
 // self-service deletion at /api/account) - not boilerplate, and not copied
-// from any other company's terms. [BRACKETED] spots are the handful of
-// specifics only the business itself can fill in (legal entity name,
-// jurisdiction/governing law, arbitration venue, a real contact address).
-// Still needs an actual lawyer's review before launch.
+// from any other company's terms. Business specifics confirmed 2026-10-01:
+// support/DMCA contact is support@curealo.com, governing law is England and
+// Wales (global users are unaffected - governing law picks which courts
+// interpret the contract, not who can use the service; mandatory local
+// consumer protections are explicitly preserved below regardless), $100 USD
+// liability cap, no arbitration clause or class-action waiver (explicit
+// choice, not a default). Still open: whether "Curealo" the product name is
+// also the correct legal contracting party, or whether a registered entity
+// (LLC/Ltd/Inc) should be named instead once one exists. Still needs an
+// actual lawyer's review before launch - this fills in the blanks, not
+// that step.
 //
 // Shared between the public /terms page (src/app/terms/page.tsx - has to be
 // reachable without an account: a prospective user needs to be able to read
@@ -71,7 +78,7 @@ export const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
     heading: "8. Intellectual property and copyright complaints",
     paragraphs: [
       "The app itself (its code, design, and branding) is owned by us. These Terms don't grant you any rights to it beyond using the service as intended.",
-      "If you believe content on this service infringes your copyright, send a notice to [DMCA/COPYRIGHT AGENT CONTACT] including: your contact details, a description of the copyrighted work, the specific material you're reporting and where it is, and a statement that you have a good-faith belief the use isn't authorized. We'll remove or disable access to reported material and may terminate repeat infringers' accounts.",
+      "If you believe content on this service infringes your copyright, send a notice to support@curealo.com including: your contact details, a description of the copyrighted work, the specific material you're reporting and where it is, and a statement that you have a good-faith belief the use isn't authorized. We'll remove or disable access to reported material and may terminate repeat infringers' accounts.",
     ],
   },
   {
@@ -84,7 +91,7 @@ export const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
     heading: "10. Limitation of liability",
     paragraphs: [
       "To the maximum extent permitted by law, we aren't liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, data, or goodwill, arising from your use of the service.",
-      "Our total liability for any claim arising from these Terms or the service is limited to the amount you paid us in the 3 months before the claim arose, or [$100 USD], whichever is greater.",
+      "Our total liability for any claim arising from these Terms or the service is limited to the amount you paid us in the 3 months before the claim arose, or $100 USD, whichever is greater.",
       "Some jurisdictions don't allow these limitations, so some of the above may not apply to you.",
     ],
   },
@@ -104,8 +111,9 @@ export const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "13. Governing law and disputes",
     paragraphs: [
-      "These Terms are governed by the laws of [JURISDICTION], without regard to conflict-of-law principles.",
-      "Before filing a claim, you agree to contact us at [SUPPORT EMAIL] and attempt to resolve the dispute informally for at least 30 days. [OPTIONAL: add a binding-arbitration clause and/or class-action waiver here once you've decided with a lawyer whether you want one - this is a real, consequential choice (it affects whether users can sue you in court or join a class action), not something to default into.]",
+      "These Terms are governed by the laws of England and Wales, without regard to conflict-of-law principles. This applies no matter which country you access the service from - choosing one governing law is standard practice for a service with users worldwide, and doesn't restrict who can use it.",
+      "Before filing a claim, you agree to contact us at support@curealo.com and attempt to resolve the dispute informally for at least 30 days. Any dispute that isn't resolved informally is subject to the exclusive jurisdiction of the courts of England and Wales.",
+      "If you're a consumer in a country whose local law gives you mandatory consumer protections, nothing in this section takes those away - it governs everything else about how these Terms are interpreted and enforced.",
     ],
   },
   {
@@ -123,7 +131,7 @@ export const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "16. Contact",
     paragraphs: [
-      "Questions about these Terms: [SUPPORT EMAIL].",
+      "Questions about these Terms: support@curealo.com.",
     ],
   },
 ];
@@ -172,19 +180,19 @@ export const PRIVACY_SECTIONS: { heading: string; paragraphs: string[] }[] = [
     paragraphs: [
       "You can access, export (by downloading), or delete any individual generation at any time from your Creations.",
       "You can delete your entire account and all associated data at any time, without contacting us, from Account > Danger zone.",
-      "Depending on where you live, you may have additional rights over your personal data (e.g. GDPR/CCPA rights to access, correct, or restrict processing). Contact us at [SUPPORT EMAIL] with any request.",
+      "Depending on where you live, you may have additional rights over your personal data (e.g. GDPR/CCPA rights to access, correct, or restrict processing). Contact us at support@curealo.com with any request.",
     ],
   },
   {
     heading: "7. Children's privacy",
     paragraphs: [
-      "This service isn't directed at anyone under 18, and we don't knowingly collect personal information from anyone under 18. If you believe a child has provided us with personal information, contact [SUPPORT EMAIL] and we'll delete it.",
+      "This service isn't directed at anyone under 18, and we don't knowingly collect personal information from anyone under 18. If you believe a child has provided us with personal information, contact support@curealo.com and we'll delete it.",
     ],
   },
   {
     heading: "8. Contact",
     paragraphs: [
-      "Questions about this Privacy Policy: [SUPPORT EMAIL].",
+      "Questions about this Privacy Policy: support@curealo.com.",
     ],
   },
 ];
@@ -211,7 +219,7 @@ export const COOKIE_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "4. Contact",
     paragraphs: [
-      "Questions about this Cookie Policy: [SUPPORT EMAIL].",
+      "Questions about this Cookie Policy: support@curealo.com.",
     ],
   },
 ];
@@ -233,7 +241,7 @@ export const REFUND_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "3. Exceptional circumstances",
     paragraphs: [
-      "If you believe you were charged in error - a duplicate charge, or a sustained service outage that prevented you from using credits you purchased - contact [SUPPORT EMAIL] and we'll review it.",
+      "If you believe you were charged in error - a duplicate charge, or a sustained service outage that prevented you from using credits you purchased - contact support@curealo.com and we'll review it.",
     ],
   },
 ];

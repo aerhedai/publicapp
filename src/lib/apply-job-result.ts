@@ -5,6 +5,8 @@ import { CREDIT_COST_BY_TYPE, confirmCredits, releaseCredits } from "@/lib/credi
 import { releaseGlobalSlot } from "@/lib/concurrency";
 import { advanceProject, finalizeStitchJob } from "@/lib/projects";
 import type { RunpodJobStatus } from "@/lib/runpod";
+import { checkImageOutputSafety } from "@/lib/output-moderation";
+import { createPresignedDownload, deleteUserObjects } from "@/storage/r2";
 
 /**
  * Applies a RunPod job's terminal result to our row - shared by the webhook
@@ -38,6 +40,31 @@ export async function applyRunpodResult(
       await advanceProjectForJob(job.projectClipId);
     }
     return;
+  }
+
+  // Output-side moderation - only for images (see output-moderation.ts's own
+  // docstring on why video/stitch aren't covered). A second, separate gate
+  // from the generic failure check above: the job succeeded at the RunPod
+  // level, but its rendered output still needs to clear this before "done"
+  // is allowed to mean "shown to the user".
+  if (job.type === "image") {
+    const previewUrl = await createPresignedDownload(output.outputStorageKey!, 300);
+    const moderation = await checkImageOutputSafety(previewUrl);
+    if (!moderation.allowed) {
+      await releaseCredits({
+        jobId: job.id,
+        userId: job.userId,
+        estimatedCredits: cost,
+        error: moderation.reason ?? "Blocked by output safety check",
+      });
+      await releaseGlobalSlot();
+      // Already uploaded to R2 by the worker before this check ran (unlike
+      // an ordinary generation failure, which never produces an object) -
+      // delete it rather than leaving a flagged image sitting in the bucket.
+      await deleteUserObjects(job.userId, [output.outputStorageKey!]);
+      await advanceProjectForJob(job.projectClipId);
+      return;
+    }
   }
 
   // reserveLedgerId is guaranteed non-null here - a job can only reach

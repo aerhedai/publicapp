@@ -1,0 +1,40 @@
+name: Dispatch cron
+
+# Vercel's own Cron Jobs feature (vercel.json) was removed from this repo
+# (see git history: "Remove vercel.json - Hobby plan rejects sub-daily cron
+# schedules") because the Hobby plan only allows daily schedules, which is
+# far too infrequent for these two routes. That removal left
+# /api/cron/dispatch and /api/cron/sweep-stale with NO scheduler calling
+# them at all - confirmed live (2026-10-01): no vercel.json, no other
+# workflow, nothing in the repo triggers either route. Both routes are the
+# only recovery path for a job that falls through the cracks (the primary
+# dispatch is inline/synchronous in POST /api/jobs, which is best-effort
+# only) - without this, a transient dispatch failure or a lost RunPod
+# webhook leaves a job (and the user's locked credits) stuck forever.
+#
+# This is a free, zero-infra-dependency replacement: GitHub Actions'
+# schedule trigger, hitting both routes with the same
+# `Authorization: Bearer $CRON_SECRET` header verifyCronSecret.ts already
+# expects (it was written for Vercel Cron, which sends the same header
+# shape, so no app code needed to change). 5 minutes is GitHub's practical
+# minimum reliable granularity for `schedule` (and matches the Vercel
+# Hobby-plan interval this would otherwise want to use anyway).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /api/cron/dispatch
+        run: |
+          curl -sf -X GET "https://curealo.com/api/cron/dispatch" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30
+      - name: GET /api/cron/sweep-stale
+        run: |
+          curl -sf -X GET "https://curealo.com/api/cron/sweep-stale" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30

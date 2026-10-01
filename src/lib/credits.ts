@@ -18,17 +18,20 @@ import { eq, sql } from "drizzle-orm";
 // instead of neon-http - noted here, not silently assumed away.
 
 // Flat per-type estimate, reserved at dispatch time. These ratios are real,
-// not placeholders - computed from this session's own live-measured worker
-// execution times: image (Flux.2 Klein, AMPERE_24 @ $0.69/hr, ~7.1s avg)
-// costs ~$0.0014/gen; video (MiniMax H3, ADA_24 @ $1.10/hr, ~5.9min avg)
-// costs ~$0.108/gen - a ~79:1 real cost ratio, not the 5:1 this used to
-// charge (every video was being sold at a steep loss relative to images).
-// 1 credit = 1 image = the base unit; video rounds the real ~77x ratio up
-// slightly to a clean 80 for margin safety. See src/lib/pricing-tiers.ts
-// for the $/credit sell price this implies (~10x markup over these costs).
+// not placeholders - corrected 2026-10-01 from 5 fresh live-measured video
+// generations (the previous 80-credit figure was based on a stale "~5.9min
+// avg" assumption that was wrong by ~9x - real measured average is 39.5s).
+// Current numbers: image (Flux.2 Klein) costs ~$0.001/gen; video (MiniMax
+// H3, confirmed live on an RTX PRO 6000 MIG slice @ $1.00/hr, 39.5s avg
+// across 5 samples) costs ~$0.011/gen - a real ~11:1 cost ratio, not 80:1.
+// 1 credit = 1 image = the base unit; video credit cost (18) targets a
+// ~$0.25 retail price at this app's ~$0.014/credit sell price (see
+// src/lib/pricing-tiers.ts), which comes out to ~95% gross margin over the
+// real $0.011 compute cost - priced for user-facing value, not a thin
+// markup over cost.
 export const CREDIT_COST_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
   image: 1,
-  video: 80,
+  video: 18,
   stitch: 1, // ffmpeg concat is CPU-only and seconds of work - negligible real cost, flat placeholder is fine
 };
 

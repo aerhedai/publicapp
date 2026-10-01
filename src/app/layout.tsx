@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import { AuthModalProvider } from "@/components/auth/auth-modal-context";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
             <AuthModal />
           </AuthModalProvider>
+          <CookieBanner />
         </body>
       </html>
     </ClerkProvider>

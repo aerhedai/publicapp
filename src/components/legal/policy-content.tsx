@@ -23,6 +23,27 @@
 // can drift.
 export const LAST_UPDATED = "October 1, 2026";
 
+// UK trader-information disclosure (Electronic Commerce (EC Directive)
+// Regulations 2002 / Provision of Services Regulations 2009) - required for
+// any commercial website given England and Wales governing law, separate
+// from and in addition to the Terms/Privacy content itself. Confirmed
+// 2026-10-01: not VAT-registered (below the ~£90k/year threshold - genuinely
+// not applicable, not a gap) and not yet incorporated (operating as a sole
+// trader, no Companies House number - also genuinely not applicable yet).
+// The geographic address does NOT have a "not applicable" option under this
+// regulation even for a sole trader with no company - still outstanding,
+// flagged explicitly below rather than silently omitted or faked.
+export const BUSINESS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
+  {
+    heading: "Who operates this service",
+    paragraphs: [
+      "Curealo is operated as a sole trader (not an incorporated company) based in England. A full registered/trading address will be published here shortly - in the meantime, contact support@curealo.com for any formal correspondence.",
+      "Not VAT-registered (below the UK VAT registration threshold).",
+      "Contact: support@curealo.com.",
+    ],
+  },
+];
+
 export const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "1. The service",
@@ -297,6 +318,7 @@ export function PolicyDocument() {
         <p className="mt-1 text-sm text-muted-foreground">Last updated {LAST_UPDATED}.</p>
       </div>
 
+      <PolicyCard id="business-information" title="Business Information" sections={BUSINESS_SECTIONS} />
       <PolicyCard id="terms-of-service" title="Terms of Service" sections={TERMS_SECTIONS} />
       <PolicyCard id="privacy-policy" title="Privacy Policy" sections={PRIVACY_SECTIONS} />
       <PolicyCard id="cookie-policy" title="Cookie Policy" sections={COOKIE_SECTIONS} />

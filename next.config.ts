@@ -29,8 +29,18 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   // blob: - local <img>/<video> previews via URL.createObjectURL() before a
   // reference/upload has finished (src/components/console/create/reference-panels.tsx)
-  // are blocked by the CSP layer without this, confirmed live.
-  "img-src 'self' data: blob: https://img.clerk.com",
+  // are blocked by the CSP layer without this, confirmed live. The R2
+  // wildcard is for rendering a completed job's own output
+  // (output-preview.tsx's <img src={presignedUrl}>) - connect-src already
+  // allowlists R2 for presigned uploads, but img-src is a separate directive
+  // and never had it, so every generated-image thumbnail was silently
+  // CSP-blocked - confirmed live via the browser's own CSP violation message.
+  "img-src 'self' data: blob: https://img.clerk.com https://*.r2.cloudflarestorage.com",
+  // Governs <video src>/<audio src> (output-preview.tsx's video player for
+  // video/stitch jobs) - same R2 reasoning as img-src above. No directive
+  // here falls back to default-src 'self', which would've blocked video
+  // previews for the identical reason once img-src was fixed.
+  "media-src 'self' https://*.r2.cloudflarestorage.com",
   "font-src 'self' data:",
   // Presigned uploads (src/storage/r2.ts) are PUT directly from the browser
   // to R2, by design - the server never proxies file bytes. Without this,

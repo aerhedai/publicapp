@@ -2,15 +2,19 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { subscriptions } from "@/db/schema";
-import { getCreditBalance } from "@/lib/credits";
+import { getCreditBalance, CREDIT_COST_BY_TYPE } from "@/lib/credits";
 import { getPricingTier } from "@/lib/pricing-tiers";
 import { PricingTiersGrid } from "@/components/console/pricing-tiers-grid";
 import { ManageBillingButton } from "@/components/console/manage-billing-button";
 
+// Pulled from the same CREDIT_COST_BY_TYPE the app actually charges
+// against (src/lib/credits.ts) rather than hardcoded copies - a hardcoded
+// "80 credits" on this exact page (and on the Support page) is what drifted
+// to the wrong number the first time this was repriced.
 const FAQ: { q: string; a: string }[] = [
   {
     q: "What's a credit actually worth?",
-    a: "1 credit = 1 image generation. A video costs 80 credits, because our video model (MiniMax H3) takes roughly 500x longer on the GPU per generation than our image model (Flux.2 Klein) - the credit cost reflects that real difference in compute, not an arbitrary ratio.",
+    a: `1 credit = 1 image generation. A video costs ${CREDIT_COST_BY_TYPE.video} credits - priced off real measured compute cost (video takes roughly 11x longer on the GPU per generation than an image), not an arbitrary ratio.`,
   },
   {
     q: "Subscription vs one-time top-up - what's the actual difference?",
@@ -47,7 +51,7 @@ export default async function PlanPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Plan</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Credits work the same everywhere - spend them on images (1 credit) or videos (80 credits), in any mix.
+          {`Credits work the same everywhere - spend them on images (1 credit) or videos (${CREDIT_COST_BY_TYPE.video} credits), in any mix.`}
         </p>
       </div>
 
@@ -94,13 +98,13 @@ export default async function PlanPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-muted/40 p-4">
             <p className="text-sm font-medium">Image</p>
-            <p className="mt-1 text-xs text-muted-foreground">Flux.2 Klein - ~7s per generation</p>
+            <p className="mt-1 text-xs text-muted-foreground">Flux.2 Klein - ~10s per generation</p>
             <p className="mt-2 text-xl font-semibold">1 credit</p>
           </div>
           <div className="rounded-2xl bg-muted/40 p-4">
             <p className="text-sm font-medium">Video</p>
-            <p className="mt-1 text-xs text-muted-foreground">MiniMax H3 - ~6min per generation</p>
-            <p className="mt-2 text-xl font-semibold">80 credits</p>
+            <p className="mt-1 text-xs text-muted-foreground">MiniMax H3 - ~40s per generation</p>
+            <p className="mt-2 text-xl font-semibold">{CREDIT_COST_BY_TYPE.video} credits</p>
           </div>
         </div>
       </div>

@@ -65,7 +65,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceCents: 900,
     credits: 640,
     popular: false,
-    features: ["~640 images or ~8 videos a month", "Character reference uploads", "Standard queue"],
+    features: ["~640 images or ~35 videos a month", "Character reference uploads", "Standard queue"],
     stripePriceIdMonthly: resolveStripeIds("starter").monthly,
     stripePriceIdOneTime: resolveStripeIds("starter").oneTime,
   },
@@ -76,7 +76,7 @@ export const PRICING_TIERS: PricingTier[] = [
     credits: 2000,
     popular: true,
     features: [
-      "~2,000 images or ~25 videos a month",
+      "~2,000 images or ~111 videos a month",
       "Character reference uploads",
       "Priority queue",
     ],
@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
     credits: 5600,
     popular: false,
     features: [
-      "~5,600 images or ~70 videos a month",
+      "~5,600 images or ~311 videos a month",
       "Character reference uploads",
       "Priority queue",
       "Multi-scene storyboards with automatic stitching",

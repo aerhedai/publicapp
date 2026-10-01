@@ -9,7 +9,7 @@ import {
   type ReferenceTagSlot,
 } from "@/lib/scene-validation";
 import { assertOwnsKey } from "@/storage/r2";
-import { CREDIT_COST_BY_TYPE } from "@/lib/credits";
+import { computeJobCost } from "@/lib/credits";
 
 // One narrow OpenRouter call per user turn - never an agentic tool-calling
 // loop. The model's only job is proposing; it never decides "inputs are
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
       scene: result.scene,
       characterRefs: tagResult.characterRefs,
       audioRefs: tagResult.audioRefs,
-      estimatedCredits: CREDIT_COST_BY_TYPE.video,
+      estimatedCredits: computeJobCost("video", { scene: result.scene }),
     });
   }
 

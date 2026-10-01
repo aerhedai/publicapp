@@ -2,19 +2,22 @@ import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { subscriptions } from "@/db/schema";
-import { getCreditBalance, CREDIT_COST_BY_TYPE } from "@/lib/credits";
+import { getCreditBalance } from "@/lib/credits";
+import { imageCreditCost, videoCreditCost, VIDEO_MIN_DURATION_SECONDS, VIDEO_MAX_DURATION_SECONDS } from "@/lib/pricing-math";
 import { getPricingTier } from "@/lib/pricing-tiers";
 import { PricingTiersGrid } from "@/components/console/pricing-tiers-grid";
 import { ManageBillingButton } from "@/components/console/manage-billing-button";
 
-// Pulled from the same CREDIT_COST_BY_TYPE the app actually charges
-// against (src/lib/credits.ts) rather than hardcoded copies - a hardcoded
-// "80 credits" on this exact page (and on the Support page) is what drifted
-// to the wrong number the first time this was repriced.
+// Pulled from the same tables the app actually charges against
+// (src/lib/credits.ts) rather than hardcoded copies - a hardcoded number on
+// this exact page (and on the Support page) is what drifted wrong the first
+// time this was repriced. Cost now depends on resolution (and, for video,
+// duration too) - not a single flat number - so the FAQ states the real
+// range rather than one misleading figure.
 const FAQ: { q: string; a: string }[] = [
   {
     q: "What's a credit actually worth?",
-    a: `1 credit = 1 image generation. A video costs ${CREDIT_COST_BY_TYPE.video} credits - priced off real measured compute cost (video takes roughly 11x longer on the GPU per generation than an image), not an arbitrary ratio.`,
+    a: `1 credit = 1 image at 480p (the cheapest, smallest option); 768p images cost ${imageCreditCost("768p")} credits. Videos are priced per second - from ${videoCreditCost("480p", VIDEO_MIN_DURATION_SECONDS)} credits (480p, ${VIDEO_MIN_DURATION_SECONDS}s) up to ${videoCreditCost("768p", VIDEO_MAX_DURATION_SECONDS)} credits (768p, ${VIDEO_MAX_DURATION_SECONDS}s) - longer and higher-resolution videos cost more, shown live as you adjust the slider.`,
   },
   {
     q: "Subscription vs one-time top-up - what's the actual difference?",
@@ -51,7 +54,8 @@ export default async function PlanPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Plan</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {`Credits work the same everywhere - spend them on images (1 credit) or videos (${CREDIT_COST_BY_TYPE.video} credits), in any mix.`}
+          Credits work the same everywhere - spend them on images or videos, in any mix. Cost depends on the
+          resolution (and, for video, duration) you pick - see the real breakdown below.
         </p>
       </div>
 
@@ -93,18 +97,43 @@ export default async function PlanPage() {
       <div className="rounded-3xl border border-border bg-card p-6">
         <h2 className="font-display text-lg font-medium">Cost per generation</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Real numbers, not estimates - measured from this app&apos;s own worker execution times.
+          Execution times are real, measured from this app&apos;s own workers; pricing is per-second for video.
+          Picked in the settings popover when you generate.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl bg-muted/40 p-4">
-            <p className="text-sm font-medium">Image</p>
-            <p className="mt-1 text-xs text-muted-foreground">Flux.2 Klein - ~10s per generation</p>
-            <p className="mt-2 text-xl font-semibold">1 credit</p>
+            <p className="text-sm font-medium">Image - Flux.2 Klein</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">480p (~4s)</span>
+                <span className="font-semibold">{imageCreditCost("480p")} credit</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">768p (~10s)</span>
+                <span className="font-semibold">{imageCreditCost("768p")} credits</span>
+              </div>
+            </div>
           </div>
           <div className="rounded-2xl bg-muted/40 p-4">
-            <p className="text-sm font-medium">Video</p>
-            <p className="mt-1 text-xs text-muted-foreground">MiniMax H3 - ~40s per generation</p>
-            <p className="mt-2 text-xl font-semibold">{CREDIT_COST_BY_TYPE.video} credits</p>
+            <p className="text-sm font-medium">Video - MiniMax H3</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">480p, 4s (~40s)</span>
+                <span className="font-semibold">{videoCreditCost("480p", 4)} credits</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">480p, 8s (~94s)</span>
+                <span className="font-semibold">{videoCreditCost("480p", 8)} credits</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">768p, 4s (~125s)</span>
+                <span className="font-semibold">{videoCreditCost("768p", 4)} credits</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">768p, 8s (~257s)</span>
+                <span className="font-semibold">{videoCreditCost("768p", 8)} credits</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

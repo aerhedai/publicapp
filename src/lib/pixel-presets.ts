@@ -1,11 +1,12 @@
 import { IMAGE_ASPECT_RATIOS, type ImageSettings } from "@/components/console/create/types";
 
-// "1K" == Comfy-Org's own official default for FLUX.2 Klein 4B (1024x1024,
-// 1MP); "2K" == Klein's stated max (2048x2048, 4MP). Not arbitrary - see
-// comfyui-flux2-klein-worker/graph_builder.py and types.ts's own comment.
+// "480p" (0.4MP) / "768p" (1.0MP) - same tier names/values as the video
+// worker's own resolution options, see types.ts's own comment on why. 1.0MP
+// is Comfy-Org's own official default for FLUX.2 Klein 4B (1024x1024) - the
+// old "2K"/4MP max was dropped (see types.ts).
 const IMAGE_RESOLUTION_MEGAPIXELS: Record<ImageSettings["resolution"], number> = {
-  "1K": 1.0,
-  "2K": 4.0,
+  "480p": 0.4,
+  "768p": 1.0,
 };
 
 // Klein's EmptyFlux2LatentImage/Flux2Scheduler both require width/height as

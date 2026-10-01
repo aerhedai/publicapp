@@ -1,6 +1,8 @@
 import { db } from "@/db/client";
 import { creditLedger, generationJobs, jobType } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { imageCreditCost, videoCreditCost } from "@/lib/pricing-math";
+export { IMAGE_CREDIT_COST_BY_RESOLUTION, VIDEO_BASE_PRICE_USD, VIDEO_PER_SECOND_USD, VIDEO_RESOLUTION_PRICE_MULTIPLIER, PRICE_PER_CREDIT_USD, videoPriceUSD, videoCreditCost, imageCreditCost } from "@/lib/pricing-math";
 
 // NOTE ON ATOMICITY: this app's DB client uses drizzle-orm/neon-http, which
 // genuinely does not support multi-statement transactions - `db.transaction()`
@@ -17,23 +19,52 @@ import { eq, sql } from "drizzle-orm";
 // transactional driver (e.g. neon-serverless's pooled/websocket client)
 // instead of neon-http - noted here, not silently assumed away.
 
-// Flat per-type estimate, reserved at dispatch time. These ratios are real,
-// not placeholders - corrected 2026-10-01 from 5 fresh live-measured video
-// generations (the previous 80-credit figure was based on a stale "~5.9min
-// avg" assumption that was wrong by ~9x - real measured average is 39.5s).
-// Current numbers: image (Flux.2 Klein) costs ~$0.001/gen; video (MiniMax
-// H3, confirmed live on an RTX PRO 6000 MIG slice @ $1.00/hr, 39.5s avg
-// across 5 samples) costs ~$0.011/gen - a real ~11:1 cost ratio, not 80:1.
-// 1 credit = 1 image = the base unit; video credit cost (18) targets a
-// ~$0.25 retail price at this app's ~$0.014/credit sell price (see
-// src/lib/pricing-tiers.ts), which comes out to ~95% gross margin over the
-// real $0.011 compute cost - priced for user-facing value, not a thin
-// markup over cost.
+// Only stitch actually reaches this - image and video both have a real
+// resolution/(duration)-aware cost computed below (imageCreditCost/
+// videoCreditCost, from pricing-math.ts) and never fall through to here.
+// Stitch has no resolution/duration dimension at all - it's CPU-only ffmpeg
+// concatenation, seconds of work, negligible real cost, flat placeholder is
+// fine.
 export const CREDIT_COST_BY_TYPE: Record<(typeof jobType.enumValues)[number], number> = {
-  image: 1,
-  video: 18,
-  stitch: 1, // ffmpeg concat is CPU-only and seconds of work - negligible real cost, flat placeholder is fine
+  image: 1, // unreachable in computeJobCost - kept only as this Record's required shape
+  video: 1, // unreachable in computeJobCost - kept only as this Record's required shape
+  stitch: 1,
 };
+
+function isImageResolution(value: unknown): value is "480p" | "768p" {
+  return value === "480p" || value === "768p";
+}
+
+/**
+ * The single place a job's real credit cost is computed, from its own
+ * stored `input` (the same jsonb blob dispatch-one-job.ts already has in
+ * hand) rather than a flat per-type constant. Called once, at reservation
+ * time (dispatch-one-job.ts) - the result is stored on the job as
+ * `estimatedCredits` and that stored value, not a re-computation, is what
+ * every later step (confirm/refund) uses, so a mid-flight pricing change
+ * can never retroactively affect an already-reserved job.
+ *
+ * Falls back to the cheaper resolution tier (never the pricier one) when
+ * resolution/duration is missing or malformed in input - should never
+ * happen for a job created through the real UI (which only ever sends
+ * valid values), but a legacy/malformed row should never cost a user more
+ * than the floor price, only ever less in that edge case. Duration itself
+ * needs no validation beyond the number coercion videoPriceUSD's own
+ * clamping already does (pricing-math.ts).
+ */
+export function computeJobCost(type: (typeof jobType.enumValues)[number], input: unknown): number {
+  if (type === "image") {
+    const resolution = (input as { resolution?: unknown } | null)?.resolution;
+    return imageCreditCost(isImageResolution(resolution) ? resolution : "480p");
+  }
+  if (type === "video") {
+    const scene = (input as { scene?: { resolution?: unknown; duration?: unknown } } | null)?.scene;
+    const resolution = isImageResolution(scene?.resolution) ? scene.resolution : "480p";
+    const duration = typeof scene?.duration === "number" ? scene.duration : 4;
+    return videoCreditCost(resolution, duration);
+  }
+  return CREDIT_COST_BY_TYPE[type];
+}
 
 export async function getCreditBalance(userId: string): Promise<number> {
   const [row] = await db
@@ -56,9 +87,9 @@ export type ReserveResult = { ok: true; reserveLedgerId: string } | { ok: false;
 export async function reserveCredits(params: {
   jobId: string;
   userId: string;
-  type: (typeof jobType.enumValues)[number];
+  cost: number;
 }): Promise<ReserveResult> {
-  const cost = CREDIT_COST_BY_TYPE[params.type];
+  const cost = params.cost;
   const balance = await getCreditBalance(params.userId);
   if (balance < cost) {
     return { ok: false, reason: "insufficient_credits" };

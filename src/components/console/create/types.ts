@@ -1,10 +1,12 @@
 export type Mode = "image" | "video";
 
-// Only the two sizes FLUX.2 Klein 4B is actually run at (see
-// comfyui-flux2-klein-worker/graph_builder.py): "1K" is Comfy-Org's own
-// official default (1024x1024, 1MP) and "2K" is Klein's stated max (2048x2048,
-// 4MP) - not arbitrary presets, these map directly to real width/height sent
-// to the worker (src/lib/pixel-presets.ts).
+// "480p"/"768p" - same naming and megapixel tiers as the video worker's own
+// resolution options (below), not the previous "1K"/"2K" (1MP/4MP) - 4MP
+// ("2K") was dropped entirely: real measured cost (src/lib/credits.ts) was
+// ~4x the 1MP tier for a quality bump that wasn't worth exposing. "768p"
+// here (1.0MP) is numerically identical to the old "1K" default - only the
+// label and the now-real, non-flat credit cost changed. See
+// src/lib/pixel-presets.ts for the actual width/height mapping.
 //
 // steps/cfg/seed/sampler mirror the worker's own per-job overrides
 // (graph_builder.py's build_image_graph) one to one - null/undefined means
@@ -14,7 +16,7 @@ export type Mode = "image" | "video";
 export interface ImageSettings {
   aspectRatio: string;
   outputs: number;
-  resolution: "1K" | "2K";
+  resolution: "480p" | "768p";
   steps: number;
   cfg: number;
   seed: number | null; // null = random every job
@@ -34,6 +36,11 @@ export type ImageSampler = (typeof IMAGE_SAMPLERS)[number];
 // counts for those resolution tiers (854x480 ~= 0.41MP, 1366x768 ~= 1.05MP;
 // 1.0MP also happens to be that node's own shipped default). See
 // src/lib/pixel-presets.ts for the actual mapping used at dispatch time.
+//
+// durationSeconds is a continuous 1-10s slider - every whole-second value
+// has a real formula-computed price (src/lib/pricing-math.ts's
+// videoCreditCost), not a fixed lookup table, so there's no need to
+// restrict it to specific tested values the way resolution is restricted.
 export interface VideoSettings {
   aspectRatio: string;
   durationSeconds: number;
@@ -69,7 +76,7 @@ export const VIDEO_ASPECT_RATIOS: { label: string; ratio: number | null }[] = [
 export const DEFAULT_IMAGE_SETTINGS: ImageSettings = {
   aspectRatio: "Auto",
   outputs: 1,
-  resolution: "1K",
+  resolution: "480p",
   steps: 4,
   cfg: 1.0,
   seed: null,

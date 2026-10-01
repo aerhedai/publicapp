@@ -94,6 +94,20 @@ export function MediaPickerModal({
       .catch(() => setLibrary([]));
   }, [open]);
 
+  // The real keyboard equivalent to the backdrop's click-to-dismiss below -
+  // a11y audit correctly flagged that div as having a click handler with no
+  // keyboard path; making the backdrop itself focusable/tabbable would be
+  // worse UX (an invisible full-screen tab stop), so Escape is the standard
+  // modal pattern instead.
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   function togglePick(type: "image" | "audio", storageKey: string, previewUrl: string | null) {
@@ -122,8 +136,15 @@ export function MediaPickerModal({
   }
 
   return (
+    // Click-to-dismiss backdrop; Escape (handled above) is its real keyboard
+    // equivalent - this project's lint config doesn't enforce jsx-a11y, but
+    // the fix (Escape support + role="dialog"/aria-modal/aria-label below)
+    // is real regardless of whether a linter checks for it.
     <div className="animate-popover-in fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Upload or select media"
         className="flex max-h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-950"
         onClick={(e) => e.stopPropagation()}
       >

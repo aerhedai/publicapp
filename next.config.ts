@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+// v11's withSentryConfig moved to this subpath - not re-exported from the
+// package's main entry point anymore (confirmed against the installed
+// version's own type declarations, not assumed from memory).
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // Clerk's hosted components (sign-in/up widgets, dev browser handshake) need
 // their own script/frame/connect origins allowlisted - this is the
@@ -74,4 +78,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// org/project/authToken are picked up automatically from SENTRY_ORG/
+// SENTRY_PROJECT/SENTRY_AUTH_TOKEN (set by the Vercel Sentry integration,
+// see .env.local) - no need to pass them here. tunnelRoute proxies
+// client-side error/trace reports through this app's own server at
+// /monitoring instead of sending them directly to Sentry's ingest host -
+// same-origin, so it needs no CSP change and isn't blocked by ad-blockers
+// that target *.sentry.io directly. Added to proxy.ts's public-route
+// allowlist since it must work for unauthenticated visitors too.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  tunnelRoute: "/monitoring",
+});

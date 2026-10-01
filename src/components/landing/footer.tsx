@@ -26,8 +26,13 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Legal",
     links: [
-      { label: "Terms of Service", href: "/terms" },
-      { label: "Privacy Policy", href: "/privacy" },
+      // Real, public routes with real anchor ids (src/components/legal/
+      // policy-content.tsx) - previously pointed at /terms and /privacy,
+      // neither of which existed at all (a confirmed 404 on both).
+      { label: "Terms of Service", href: "/terms#terms-of-service" },
+      { label: "Privacy Policy", href: "/terms#privacy-policy" },
+      { label: "Cookie Policy", href: "/terms#cookie-policy" },
+      { label: "Refund Policy", href: "/terms#refund-policy" },
     ],
   },
 ];

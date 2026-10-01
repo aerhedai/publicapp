@@ -104,6 +104,11 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
             characterRefs: references.length > 0 ? characterRefs : undefined,
             width,
             height,
+            // The resolution *label*, not just width/height - computeJobCost
+            // (src/lib/credits.ts) reads this directly rather than
+            // re-deriving a tier from raw pixel counts, so it has to survive
+            // the trip from settings to the stored job input.
+            resolution: settings.resolution,
             steps: settings.steps,
             cfg: settings.cfg,
             seed: settings.seed ?? undefined,

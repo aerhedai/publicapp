@@ -6,6 +6,7 @@ import {
   type ImageSettings,
   type VideoSettings,
 } from "./types";
+import { imageCreditCost, videoCreditCost } from "@/lib/pricing-math";
 
 function AspectRatioGrid({
   options,
@@ -102,10 +103,10 @@ export function ImageSettingsPopover({
       <div className="mt-5">
         <p className="mb-2 text-xs font-medium text-zinc-400">Resolution</p>
         <div className="flex flex-wrap gap-2">
-          {(["1K", "2K"] as const).map((res) => (
+          {(["480p", "768p"] as const).map((res) => (
             <Pill
               key={res}
-              label={res}
+              label={`${res} · ${imageCreditCost(res)}cr`}
               active={settings.resolution === res}
               onClick={() => onChange({ ...settings, resolution: res })}
             />
@@ -229,6 +230,14 @@ export function VideoSettingsPopover({
           onChange={(e) => onChange({ ...settings, durationSeconds: Number(e.target.value) })}
           className="mt-3 w-full accent-white"
         />
+        {/* Live price readout - every point on the slider has a real,
+            formula-computed cost (pricing-math.ts's videoCreditCost), not a
+            flat number, so showing it update live is what makes "this
+            costs more" legible as you drag rather than a surprise at
+            generate time. */}
+        <p className="mt-2 text-xs text-zinc-500">
+          {videoCreditCost(settings.resolution, settings.durationSeconds)} credits at this length and resolution
+        </p>
       </div>
 
       <div className="mt-5">

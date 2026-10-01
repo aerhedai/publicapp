@@ -1,6 +1,7 @@
 import { AspectIcon } from "./aspect-icon";
 import {
   IMAGE_ASPECT_RATIOS,
+  IMAGE_SAMPLERS,
   VIDEO_ASPECT_RATIOS,
   type ImageSettings,
   type VideoSettings,
@@ -110,6 +111,77 @@ export function ImageSettingsPopover({
             />
           ))}
         </div>
+      </div>
+
+      <div className="my-4 border-t border-white/10" />
+      <p className="mb-3 text-xs font-medium text-zinc-400">Advanced</p>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-zinc-400">Steps</p>
+          <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white">{settings.steps}</span>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={8}
+          value={settings.steps}
+          onChange={(e) => onChange({ ...settings, steps: Number(e.target.value) })}
+          className="mt-3 w-full accent-white"
+        />
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-zinc-400">Guidance (CFG)</p>
+          <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white">{settings.cfg.toFixed(1)}</span>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={5}
+          step={0.1}
+          value={settings.cfg}
+          onChange={(e) => onChange({ ...settings, cfg: Number(e.target.value) })}
+          className="mt-3 w-full accent-white"
+        />
+        {/* This is a distilled model - its weights bake in cfg=1 behavior,
+            so values above 1 are a real but experimental knob, not a
+            documented recommendation. Said plainly instead of hidden,
+            since the setting is still genuinely functional at any value in
+            range. */}
+        <p className="mt-1.5 text-[11px] text-zinc-500">This model is distilled for CFG 1 - higher values work but are experimental.</p>
+      </div>
+
+      <div className="mt-5">
+        <p className="mb-2 text-xs font-medium text-zinc-400">Sampler</p>
+        <div className="flex flex-wrap gap-2">
+          {IMAGE_SAMPLERS.map((s) => (
+            <Pill key={s} label={s} active={settings.sampler === s} onClick={() => onChange({ ...settings, sampler: s })} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-zinc-400">Seed</p>
+          <button
+            type="button"
+            onClick={() => onChange({ ...settings, seed: settings.seed === null ? 0 : null })}
+            className="text-xs text-zinc-400 transition-colors hover:text-white"
+          >
+            {settings.seed === null ? "Random" : "Fixed"}
+          </button>
+        </div>
+        {settings.seed !== null && (
+          <input
+            type="number"
+            min={0}
+            value={settings.seed}
+            onChange={(e) => onChange({ ...settings, seed: Number(e.target.value) })}
+            className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:outline-none"
+          />
+        )}
       </div>
     </div>
   );

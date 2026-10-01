@@ -104,6 +104,10 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
             characterRefs: references.length > 0 ? characterRefs : undefined,
             width,
             height,
+            steps: settings.steps,
+            cfg: settings.cfg,
+            seed: settings.seed ?? undefined,
+            sampler: settings.sampler,
           },
         }),
       });

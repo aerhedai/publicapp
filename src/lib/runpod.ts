@@ -85,6 +85,13 @@ export interface ImageJobInput {
   styleRef?: string;
   width?: number;
   height?: number;
+  // Optional per-job overrides of the worker's own distilled-template
+  // defaults (comfyui-flux2-klein-worker/graph_builder.py's DEFAULT_STEPS/
+  // DEFAULT_CFG/DEFAULT_SAMPLER) - omitted means "use the worker's default".
+  steps?: number;
+  cfg?: number;
+  seed?: number;
+  sampler?: string;
 }
 
 export type JobInput = VideoJobInput | ImageJobInput;
@@ -140,6 +147,10 @@ export async function buildWorkflowPayload(params: {
       styleRef,
       width: imageInput.width,
       height: imageInput.height,
+      steps: imageInput.steps,
+      cfg: imageInput.cfg,
+      seed: imageInput.seed,
+      sampler: imageInput.sampler,
       r2,
     },
   };

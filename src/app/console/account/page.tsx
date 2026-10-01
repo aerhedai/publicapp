@@ -11,7 +11,7 @@ export default async function AccountPage() {
   const joined = user?.createdAt ? new Date(user.createdAt) : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 sm:px-8 py-10">
       <h1 className="font-display text-2xl font-semibold tracking-tight">Account</h1>
 
       <div className="flex items-center gap-4 rounded-3xl border border-border bg-card p-6">

@@ -50,7 +50,7 @@ export default async function PlanPage() {
   const subTier = activeSub ? getPricingTier(activeSub.tierId) : undefined;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-8 py-10">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-4 sm:px-8 py-10">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Plan</h1>
         <p className="mt-1 text-sm text-muted-foreground">

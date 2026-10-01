@@ -64,7 +64,7 @@ export function CreationsTabs({
 
       {/* Static - shrink-0, not part of the scrolling region below, so it
           never moves regardless of how far the grid is scrolled. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-8 py-3">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 sm:px-8 py-3">
         <button
           type="button"
           onClick={() => setTab("creations")}

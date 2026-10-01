@@ -150,7 +150,7 @@ export const PRIVACY_SECTIONS: { heading: string; paragraphs: string[] }[] = [
   {
     heading: "3. Who we share it with",
     paragraphs: [
-      "We use the following subprocessors to operate the service, each only for the purpose of providing their part of it: Clerk (authentication), Stripe (payments), RunPod (GPU compute - your prompt and reference files are sent here to generate your output), Cloudflare R2 (file storage for uploads and generated outputs), OpenRouter (prompt structuring and output content-safety screening), Upstash (rate limiting), Neon (database hosting), and Vercel (application hosting).",
+      "We use the following subprocessors to operate the service, each only for the purpose of providing their part of it: Clerk (authentication), Stripe (payments), RunPod (GPU compute - your prompt and reference files are sent here to generate your output), Cloudflare (file storage for uploads and generated outputs via R2, and as the network/CDN provider in front of this entire site, meaning it sees the requests your browser makes to us), OpenRouter (prompt structuring and output content-safety screening), Upstash (rate limiting), Neon (database hosting), Sentry (error monitoring - when something breaks, technical details about that request are sent here to help us fix it), and Vercel (application hosting).",
       "We don't sell your personal information or your generated content to third parties. We may disclose information if required by law or a valid legal process.",
     ],
   },

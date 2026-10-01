@@ -31,7 +31,7 @@ export function NewProjectButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white"
+        className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-5 py-2 text-sm font-medium text-white transition-transform duration-150 ease-out active:scale-[0.97]"
       >
         New storyboard
       </button>
@@ -39,7 +39,7 @@ export function NewProjectButton() {
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1">
+    <div className="animate-popover-in flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1">
       <input
         autoFocus
         value={title}
@@ -52,7 +52,7 @@ export function NewProjectButton() {
         type="button"
         disabled={!title.trim() || creating}
         onClick={() => void handleCreate()}
-        className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        className="rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-4 py-1.5 text-sm font-medium text-white transition-transform duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {creating ? "Creating..." : "Create"}
       </button>

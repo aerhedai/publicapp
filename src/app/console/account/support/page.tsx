@@ -1,3 +1,5 @@
+import { CREDIT_COST_BY_TYPE } from "@/lib/credits";
+
 const FAQS = [
   {
     q: "What can I generate?",
@@ -5,7 +7,11 @@ const FAQS = [
   },
   {
     q: "How does billing work?",
-    a: "Credits are deducted when a generation is dispatched. Images cost 1 credit, videos cost 5. If a generation fails for any reason, the credit is automatically refunded.",
+    // Pulled from the same CREDIT_COST_BY_TYPE the app actually charges
+    // against (src/lib/credits.ts) rather than a second hardcoded copy -
+    // a hardcoded "videos cost 5" here had silently drifted to say 5 when
+    // the real cost is 80, which is exactly how this class of bug happens.
+    a: `Credits are deducted when a generation is dispatched. Images cost ${CREDIT_COST_BY_TYPE.image} credit, videos cost ${CREDIT_COST_BY_TYPE.video}. If a generation fails for any reason, the credit is automatically refunded.`,
   },
   {
     q: "What happens if a generation fails?",

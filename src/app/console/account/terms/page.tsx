@@ -1,12 +1,16 @@
-// Real draft legal text, replacing the previous placeholder structure -
-// written from this app's actual behavior (credits, auto-refund-on-failure,
-// the real subprocessor list, the content policy that actually runs in
-// content-policy.ts/output-moderation.ts, self-service deletion at
-// /api/account). [BRACKETED] spots are the handful of specifics only the
-// business itself can fill in (legal entity name, jurisdiction, a real
-// contact address) - everything else here is accurate to the live product,
-// not boilerplate. Still needs an actual legal review before launch; this
-// closes the "it's literally placeholder text" gap, not that step.
+// Real draft legal text, written from this app's actual behavior (credits,
+// auto-refund-on-failure, the real subprocessor list, the content policy
+// that actually runs in content-policy.ts/output-moderation.ts,
+// self-service deletion at /api/account) - not boilerplate, and not copied
+// from any other company's terms. [BRACKETED] spots are the handful of
+// specifics only the business itself can fill in (legal entity name,
+// jurisdiction/governing law, arbitration venue, a real contact address).
+// Expanded in round 2 to cover the standard liability-reducing clauses a
+// commercial AI-generation service needs that the first draft didn't have
+// yet: warranty disclaimer, limitation of liability, indemnification,
+// termination, governing law/dispute resolution, IP/DMCA, and an
+// AI-output-specific disclaimer. Still needs an actual lawyer's review
+// before launch - this closes the content gap, not that step.
 const LAST_UPDATED = "October 1, 2026";
 
 const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
@@ -54,13 +58,67 @@ const TERMS_SECTIONS: { heading: string; paragraphs: string[] }[] = [
     ],
   },
   {
-    heading: "7. Changes",
+    heading: "7. AI-generated content - no guarantees",
     paragraphs: [
-      "We may update these Terms as the product changes. Continued use after an update means you accept the revised Terms.",
+      "Outputs are produced by machine-learning models and can be inaccurate, unpredictable, or resemble existing third-party material by coincidence - we don't guarantee that any output is original, non-infringing, or fit for any particular purpose.",
+      "You're responsible for reviewing an output before using it for any purpose - commercial, published, or otherwise - and for how you use it. Don't present AI-generated output as a genuine photo/video/recording of a real event without disclosing that it's AI-generated, where that could mislead someone.",
     ],
   },
   {
-    heading: "8. Contact",
+    heading: "8. Intellectual property and copyright complaints",
+    paragraphs: [
+      "The app itself (its code, design, and branding) is owned by us. These Terms don't grant you any rights to it beyond using the service as intended.",
+      "If you believe content on this service infringes your copyright, send a notice to [DMCA/COPYRIGHT AGENT CONTACT] including: your contact details, a description of the copyrighted work, the specific material you're reporting and where it is, and a statement that you have a good-faith belief the use isn't authorized. We'll remove or disable access to reported material and may terminate repeat infringers' accounts.",
+    ],
+  },
+  {
+    heading: "9. Disclaimer of warranties",
+    paragraphs: [
+      "The service is provided \"as is\" and \"as available,\" without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We don't warrant that the service will be uninterrupted, error-free, or meet your expectations.",
+    ],
+  },
+  {
+    heading: "10. Limitation of liability",
+    paragraphs: [
+      "To the maximum extent permitted by law, we aren't liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, data, or goodwill, arising from your use of the service.",
+      "Our total liability for any claim arising from these Terms or the service is limited to the amount you paid us in the 3 months before the claim arose, or [$100 USD], whichever is greater.",
+      "Some jurisdictions don't allow these limitations, so some of the above may not apply to you.",
+    ],
+  },
+  {
+    heading: "11. Indemnification",
+    paragraphs: [
+      "You agree to indemnify and hold us harmless from any claim, loss, or demand (including reasonable legal fees) arising from your use of the service, your generated content, or your violation of these Terms.",
+    ],
+  },
+  {
+    heading: "12. Suspension and termination",
+    paragraphs: [
+      "We may suspend or terminate your access for violating these Terms, including the Acceptable Use section, without liability to you for any resulting loss - though credits and generated content are handled the same as any other account deletion where reasonably possible.",
+      "You may stop using the service and delete your account at any time (Account > Danger zone).",
+    ],
+  },
+  {
+    heading: "13. Governing law and disputes",
+    paragraphs: [
+      "These Terms are governed by the laws of [JURISDICTION], without regard to conflict-of-law principles.",
+      "Before filing a claim, you agree to contact us at [SUPPORT EMAIL] and attempt to resolve the dispute informally for at least 30 days. [OPTIONAL: add a binding-arbitration clause and/or class-action waiver here once you've decided with a lawyer whether you want one - this is a real, consequential choice (it affects whether users can sue you in court or join a class action), not something to default into.]",
+    ],
+  },
+  {
+    heading: "14. Changes to these Terms",
+    paragraphs: [
+      "We may update these Terms as the product changes. Continued use after an update means you accept the revised Terms. If a change is material, we'll make reasonable efforts to notify you (e.g. in-app or by email).",
+    ],
+  },
+  {
+    heading: "15. General",
+    paragraphs: [
+      "If any part of these Terms is found unenforceable, the rest remains in effect. These Terms, together with the Privacy, Cookie, and Refund Policies below, are the entire agreement between you and us about the service.",
+    ],
+  },
+  {
+    heading: "16. Contact",
     paragraphs: [
       "Questions about these Terms: [SUPPORT EMAIL].",
     ],
@@ -90,28 +148,67 @@ const PRIVACY_SECTIONS: { heading: string; paragraphs: string[] }[] = [
     heading: "3. Who we share it with",
     paragraphs: [
       "We use the following subprocessors to operate the service, each only for the purpose of providing their part of it: Clerk (authentication), Stripe (payments), RunPod (GPU compute - your prompt and reference files are sent here to generate your output), Cloudflare R2 (file storage for uploads and generated outputs), OpenRouter (prompt structuring and output content-safety screening), Upstash (rate limiting), Neon (database hosting), and Vercel (application hosting).",
-      "We don't sell your personal information or your generated content to third parties.",
+      "We don't sell your personal information or your generated content to third parties. We may disclose information if required by law or a valid legal process.",
     ],
   },
   {
-    heading: "4. Retention and deletion",
+    heading: "4. International transfers",
+    paragraphs: [
+      "Our subprocessors (Section 3) may process data outside your own country. Where required, we rely on those providers' own standard contractual safeguards for cross-border transfer.",
+    ],
+  },
+  {
+    heading: "5. Retention and deletion",
     paragraphs: [
       "Your uploads and generated content are retained until you delete them individually, or until you delete your account.",
       "Deleting your account (Account > Danger zone) permanently deletes your account record, every upload, and every generated output, including from storage, and can't be undone or recovered by us afterward.",
     ],
   },
   {
-    heading: "5. Your rights",
+    heading: "6. Your rights",
     paragraphs: [
       "You can access, export (by downloading), or delete any individual generation at any time from your Creations.",
       "You can delete your entire account and all associated data at any time, without contacting us, from Account > Danger zone.",
-      "Depending on where you live, you may have additional rights over your personal data. Contact us at [SUPPORT EMAIL] with any request.",
+      "Depending on where you live, you may have additional rights over your personal data (e.g. GDPR/CCPA rights to access, correct, or restrict processing). Contact us at [SUPPORT EMAIL] with any request.",
     ],
   },
   {
-    heading: "6. Contact",
+    heading: "7. Children's privacy",
+    paragraphs: [
+      "This service isn't directed at anyone under 18, and we don't knowingly collect personal information from anyone under 18. If you believe a child has provided us with personal information, contact [SUPPORT EMAIL] and we'll delete it.",
+    ],
+  },
+  {
+    heading: "8. Contact",
     paragraphs: [
       "Questions about this Privacy Policy: [SUPPORT EMAIL].",
+    ],
+  },
+];
+
+const COOKIE_SECTIONS: { heading: string; paragraphs: string[] }[] = [
+  {
+    heading: "1. What we use",
+    paragraphs: [
+      "This service only uses strictly necessary cookies - nothing for advertising, cross-site tracking, or analytics profiling. Specifically: a session cookie from Clerk (keeps you signed in) and, only during checkout, cookies set by Stripe's hosted payment page.",
+    ],
+  },
+  {
+    heading: "2. Why no consent banner is required for these",
+    paragraphs: [
+      "Strictly necessary cookies (the kind that make the service itself work, like staying signed in) are exempt from opt-in consent requirements under most cookie-law frameworks, including GDPR's ePrivacy rules. The one-time notice shown on first visit is informational, not a consent gate, because there's nothing non-essential to opt into.",
+    ],
+  },
+  {
+    heading: "3. Browser storage",
+    paragraphs: [
+      "Separately from cookies, your browser's own local/session storage is used for a few per-device conveniences (e.g. remembering you've dismissed the cookie notice, caching a presigned media URL briefly so a thumbnail doesn't reload). This never leaves your browser and we never read it server-side.",
+    ],
+  },
+  {
+    heading: "4. Contact",
+    paragraphs: [
+      "Questions about this Cookie Policy: [SUPPORT EMAIL].",
     ],
   },
 ];
@@ -153,6 +250,19 @@ function PolicySection({ heading, paragraphs }: { heading: string; paragraphs: s
   );
 }
 
+function PolicyCard({ title, sections }: { title: string; sections: { heading: string; paragraphs: string[] }[] }) {
+  return (
+    <div className="rounded-3xl border border-border bg-card p-6">
+      <h2 className="font-medium">{title}</h2>
+      <div className="mt-4 flex flex-col gap-5">
+        {sections.map((s) => (
+          <PolicySection key={s.heading} {...s} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TermsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-8 py-10">
@@ -161,32 +271,10 @@ export default function TermsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Last updated {LAST_UPDATED}.</p>
       </div>
 
-      <div className="rounded-3xl border border-border bg-card p-6">
-        <h2 className="font-medium">Terms of Service</h2>
-        <div className="mt-4 flex flex-col gap-5">
-          {TERMS_SECTIONS.map((s) => (
-            <PolicySection key={s.heading} {...s} />
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-6">
-        <h2 className="font-medium">Privacy Policy</h2>
-        <div className="mt-4 flex flex-col gap-5">
-          {PRIVACY_SECTIONS.map((s) => (
-            <PolicySection key={s.heading} {...s} />
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-border bg-card p-6">
-        <h2 className="font-medium">Refund Policy</h2>
-        <div className="mt-4 flex flex-col gap-5">
-          {REFUND_SECTIONS.map((s) => (
-            <PolicySection key={s.heading} {...s} />
-          ))}
-        </div>
-      </div>
+      <PolicyCard title="Terms of Service" sections={TERMS_SECTIONS} />
+      <PolicyCard title="Privacy Policy" sections={PRIVACY_SECTIONS} />
+      <PolicyCard title="Cookie Policy" sections={COOKIE_SECTIONS} />
+      <PolicyCard title="Refund Policy" sections={REFUND_SECTIONS} />
     </div>
   );
 }

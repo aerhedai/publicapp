@@ -181,7 +181,7 @@ export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: st
         </div>
       ) : (
         url && (
-          <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/0 opacity-0 transition-all duration-150 ease-out group-hover:bg-black/55 group-hover:opacity-100">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 bg-black/0 opacity-0 transition-all duration-150 ease-out group-hover:pointer-events-auto group-hover:bg-black/55 group-hover:opacity-100">
             <a
               href={url}
               download
@@ -221,11 +221,21 @@ export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: st
  * FREE_REGENERATIONS_PER_ORIGINAL attempts within FREE_REGENERATION_WINDOW_MS
  * of the original finishing (credits.ts) - this button never knows which
  * way that lands, it just fires the request and lets the normal credit
- * flow apply. */
+ * flow apply.
+ *
+ * Needs an explicit second click to confirm (swaps to check/cancel on the
+ * first click) - this isn't optional polish. On mobile, tapping a tile at
+ * all simulates `:hover` to reveal this overlay, so a second tap anywhere
+ * near the same spot (e.g. tapping again just to look at the result) lands
+ * on whatever button is now underneath it - confirmed live as a real
+ * accidental-regenerate report, not a hypothetical. Download/Delete still
+ * fire on one click/tap (lower-stakes, pre-existing pattern); this is the
+ * one hover action that spends real credits, so it gets the extra step. */
 function RegenerateButton({ job }: { job: JobRow }) {
+  const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleRegenerate(e: React.MouseEvent) {
+  async function handleConfirm(e: React.MouseEvent) {
     e.stopPropagation();
     if (submitting || !job.type || job.type === "stitch") return;
     setSubmitting(true);
@@ -239,15 +249,46 @@ function RegenerateButton({ job }: { job: JobRow }) {
       });
     } finally {
       setSubmitting(false);
+      setConfirming(false);
     }
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirming(false);
+          }}
+          disabled={submitting}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition-colors duration-150 ease-out hover:bg-white/25 active:scale-[0.95] disabled:opacity-50"
+          title="Cancel"
+        >
+          <CloseIcon />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => void handleConfirm(e)}
+          disabled={submitting}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-neutral-900 transition-colors duration-150 ease-out hover:bg-white/90 active:scale-[0.95] disabled:opacity-50"
+          title="Confirm regenerate"
+        >
+          <CheckIcon />
+        </button>
+      </div>
+    );
   }
 
   return (
     <button
       type="button"
-      onClick={(e) => void handleRegenerate(e)}
-      disabled={submitting}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition-colors duration-150 ease-out hover:bg-white/25 active:scale-[0.95] disabled:opacity-50"
+      onClick={(e) => {
+        e.stopPropagation();
+        setConfirming(true);
+      }}
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition-colors duration-150 ease-out hover:bg-white/25 active:scale-[0.95]"
       title="Regenerate"
     >
       <RegenerateIcon />

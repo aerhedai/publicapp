@@ -16,8 +16,12 @@ export default async function ConsoleHome() {
       id: generationJobs.id,
       status: generationJobs.status,
       createdAt: generationJobs.createdAt,
+      updatedAt: generationJobs.updatedAt,
       type: generationJobs.type,
       outputStorageKey: generationJobs.outputStorageKey,
+      input: generationJobs.input,
+      seed: generationJobs.seed,
+      regeneratedFromJobId: generationJobs.regeneratedFromJobId,
     })
     .from(generationJobs)
     .where(eq(generationJobs.userId, userId))

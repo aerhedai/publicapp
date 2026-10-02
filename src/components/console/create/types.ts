@@ -8,27 +8,19 @@ export type Mode = "image" | "video";
 // label and the now-real, non-flat credit cost changed. See
 // src/lib/pixel-presets.ts for the actual width/height mapping.
 //
-// steps/cfg/seed/sampler mirror the worker's own per-job overrides
-// (graph_builder.py's build_image_graph) one to one - null/undefined means
-// "use the worker's own default" for each, matching the worker side exactly
-// rather than this app inventing its own separate default values that could
-// drift from the worker's.
+// cfg/sampler were cut from the UI entirely (always use the worker's own
+// default - graph_builder.py's DEFAULT_CFG=1.0, DEFAULT_SAMPLER="euler") since
+// they weren't a user-friendly knob. steps stays, but reframed as a
+// "Faster <-> Smarter" slider over a narrow 4-6 range rather than the
+// worker's full 1-8 range. seed is still a worker override one-to-one -
+// null/undefined means "use the worker's own default" (random).
 export interface ImageSettings {
   aspectRatio: string;
   outputs: number;
   resolution: "480p" | "768p";
   steps: number;
-  cfg: number;
   seed: number | null; // null = random every job
-  sampler: ImageSampler;
 }
-
-// Matches comfyui-flux2-klein-worker/graph_builder.py's ALLOWED_SAMPLERS
-// exactly - a deliberately curated subset of ComfyUI's full 40+-option
-// sampler list, proven reasonable for this distilled Flux-family model, not
-// every value KSamplerSelect itself would accept.
-export const IMAGE_SAMPLERS = ["euler", "euler_ancestral", "heun", "dpmpp_2m"] as const;
-export type ImageSampler = (typeof IMAGE_SAMPLERS)[number];
 
 // "480p"/"768p" map to ResolutionSelector's `megapixels` param in the MiniMax
 // H3 worker's graph (comfyui-minimax-h3-worker/workflows/video_minimax_h3_r2v.json,
@@ -70,17 +62,14 @@ export const VIDEO_ASPECT_RATIOS: { label: string; ratio: number | null }[] = [
   { label: "4:3", ratio: 4 / 3 },
 ];
 
-// Mirrors graph_builder.py's DEFAULT_STEPS/DEFAULT_CFG/DEFAULT_SAMPLER
-// exactly (steps=4, cfg=1.0, sampler="euler") - the distilled template's own
-// proven values, not arbitrary UI defaults.
+// Mirrors graph_builder.py's DEFAULT_STEPS exactly (steps=4) - the distilled
+// template's own proven value, not an arbitrary UI default.
 export const DEFAULT_IMAGE_SETTINGS: ImageSettings = {
   aspectRatio: "Auto",
   outputs: 1,
   resolution: "480p",
   steps: 4,
-  cfg: 1.0,
   seed: null,
-  sampler: "euler",
 };
 
 export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {

@@ -7,8 +7,12 @@ export interface LiveJobRow {
   id: string;
   status: keyof typeof JOB_STATUS_CONFIG;
   createdAt: Date;
+  updatedAt?: Date;
   type?: "image" | "video" | "stitch";
   outputStorageKey?: string | null;
+  input?: unknown;
+  seed?: number | null;
+  regeneratedFromJobId?: string | null;
 }
 
 export interface JobNotice {
@@ -74,9 +78,12 @@ export function useLiveJobs(initialJobs: LiveJobRow[], type?: "image" | "video")
       // creations-tabs.tsx's job.createdAt.toLocaleDateString() throws the
       // moment a poll tick lands - which is almost immediately after
       // generating anything, since a fresh job is always non-terminal.
-      const filtered = (all as (Omit<LiveJobRow, "createdAt"> & { createdAt: string })[]).map((j) => ({
+      const filtered = (
+        all as (Omit<LiveJobRow, "createdAt" | "updatedAt"> & { createdAt: string; updatedAt?: string })[]
+      ).map((j) => ({
         ...j,
         createdAt: new Date(j.createdAt),
+        updatedAt: j.updatedAt ? new Date(j.updatedAt) : undefined,
       }));
 
       for (const j of filtered) {

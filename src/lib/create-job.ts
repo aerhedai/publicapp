@@ -32,6 +32,7 @@ export async function createGenerationJob(params: {
   input: unknown;
   createsReferenceLabel?: string | null;
   projectClipId?: string | null;
+  regeneratedFromJobId?: string | null;
 }): Promise<CreateJobResult> {
   const policy = checkContentPolicy(params.input);
   if (!policy.allowed) {
@@ -61,6 +62,7 @@ export async function createGenerationJob(params: {
       input: params.input as object,
       createsReferenceLabel: params.createsReferenceLabel?.trim() || null,
       projectClipId: params.projectClipId ?? null,
+      regeneratedFromJobId: params.regeneratedFromJobId ?? null,
     })
     .returning();
 

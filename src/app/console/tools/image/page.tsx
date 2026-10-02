@@ -13,8 +13,12 @@ export default async function ImageToolPage() {
       id: generationJobs.id,
       status: generationJobs.status,
       createdAt: generationJobs.createdAt,
+      updatedAt: generationJobs.updatedAt,
       type: generationJobs.type,
       outputStorageKey: generationJobs.outputStorageKey,
+      input: generationJobs.input,
+      seed: generationJobs.seed,
+      regeneratedFromJobId: generationJobs.regeneratedFromJobId,
     })
     .from(generationJobs)
     .where(and(eq(generationJobs.userId, userId), eq(generationJobs.type, "image")))

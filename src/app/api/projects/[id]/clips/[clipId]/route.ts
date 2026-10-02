@@ -5,6 +5,7 @@ import { projects, projectClips } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { tryAdvanceProject, type SceneDraft } from "@/lib/projects";
 import { assertOwnsKey } from "@/storage/r2";
+import { checkRateLimit, generalApiLimit } from "@/lib/rate-limit";
 
 // Saves a "generate" clip's authored scene - called once the chat flow
 // (VideoChat's dispatchOverride prop) reaches "ready" for this clip. Does
@@ -16,6 +17,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { allowed } = await checkRateLimit(generalApiLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
   const { id: projectId, clipId } = await params;
 
   const [project] = await db

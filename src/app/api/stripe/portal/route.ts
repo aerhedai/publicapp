@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { subscriptions } from "@/db/schema";
 import { getStripeClient } from "@/lib/stripe";
+import { checkRateLimit, expensiveActionLimit } from "@/lib/rate-limit";
 
 function getAppBaseUrl(): string {
   if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL;
@@ -19,6 +20,11 @@ export async function POST() {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { allowed } = await checkRateLimit(expensiveActionLimit, userId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   const [sub] = await db

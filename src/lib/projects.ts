@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects, projectClips, generationJobs } from "@/db/schema";
 import { createGenerationJob } from "@/lib/create-job";
@@ -37,18 +37,35 @@ export async function advanceProject(projectId: string): Promise<void> {
     .where(eq(projectClips.projectId, projectId))
     .orderBy(asc(projectClips.orderIndex));
 
+  // The authoritative "does this clip already have a job" source is
+  // generationJobs.projectClipId, set in the SAME insert that creates the
+  // row - not projectClips.generationJobId, which is a separate write
+  // right below and can be left unset by a crash between the two (the job
+  // row would already exist, reserving a real concurrency slot, while this
+  // clip still looks un-dispatched). Querying by projectClipId instead
+  // means a crash there can never cause a double-dispatch/double-charge
+  // for the same clip - there's nothing left to go stale.
+  const clipIds = clips.map((c) => c.id);
+  const jobsByClipId = new Map<string, typeof generationJobs.$inferSelect>();
+  if (clipIds.length > 0) {
+    const jobs = await db.select().from(generationJobs).where(inArray(generationJobs.projectClipId, clipIds));
+    for (const job of jobs) {
+      if (job.projectClipId) jobsByClipId.set(job.projectClipId, job);
+    }
+  }
+
   // Bail if any "generate" clip's job has already failed - no auto-retry,
   // the user re-triggers from the UI.
   for (const clip of clips) {
-    if (clip.source !== "generate" || !clip.generationJobId) continue;
-    const [job] = await db.select().from(generationJobs).where(eq(generationJobs.id, clip.generationJobId));
+    if (clip.source !== "generate") continue;
+    const job = jobsByClipId.get(clip.id);
     if (job?.status === "failed") {
       await db.update(projects).set({ status: "failed", updatedAt: new Date() }).where(eq(projects.id, projectId));
       return;
     }
   }
 
-  const nextToGenerate = clips.find((c) => c.source === "generate" && !c.generationJobId && c.sceneDraft);
+  const nextToGenerate = clips.find((c) => c.source === "generate" && !jobsByClipId.has(c.id) && c.sceneDraft);
   if (nextToGenerate) {
     const draft = nextToGenerate.sceneDraft as unknown as SceneDraft;
     // Same invariants as a live POST /api/jobs request (content policy +
@@ -100,9 +117,8 @@ export async function advanceProject(projectId: string): Promise<void> {
       resolvedKeys.push(clip.existingOutputStorageKey);
       continue;
     }
-    if (!clip.generationJobId) return; // not authored/dispatched yet - wait
-    const [job] = await db.select().from(generationJobs).where(eq(generationJobs.id, clip.generationJobId));
-    if (!job || job.status !== "done" || !job.outputStorageKey) return; // still in flight
+    const job = jobsByClipId.get(clip.id);
+    if (!job || job.status !== "done" || !job.outputStorageKey) return; // still in flight, or not dispatched yet
     resolvedKeys.push(job.outputStorageKey);
   }
 

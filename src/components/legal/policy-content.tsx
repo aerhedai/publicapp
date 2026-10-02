@@ -14,12 +14,12 @@
 // actual lawyer's review before launch - this fills in the blanks, not
 // that step.
 //
-// Shared between the public /terms page (src/app/terms/page.tsx - has to be
-// reachable without an account: a prospective user needs to be able to read
-// this before signing up, and it's also what Clerk's "require legal
-// consent" dashboard setting needs a real public URL for) and the
-// in-console copy at /console/account/terms (same content, convenient
-// in-app access once signed in) - one source of truth, not two copies that
+// The public /terms page (src/app/terms/page.tsx) - has to be reachable
+// without an account: a prospective user needs to be able to read this
+// before signing up, and it's also what Clerk's "require legal consent"
+// dashboard setting needs a real public URL for. The account sidebar's
+// "Terms & Policies" item links straight here now (no separate in-console
+// copy) - one source of truth, not two copies that
 // can drift.
 export const LAST_UPDATED = "October 1, 2026";
 
@@ -306,10 +306,10 @@ function PolicyCard({
   );
 }
 
-/** The full policy document body (title + all four cards) - rendered
- * identically by the public /terms page and the in-console
- * /console/account/terms page, so there's exactly one place this content
- * is written, not two that can drift apart. Each card has a real #id
+/** The full policy document body (title + all four cards) - rendered by the
+ * single public /terms page (the account sidebar links straight there, no
+ * separate in-console copy), so there's exactly one place this content is
+ * written. Each card has a real #id
  * (terms-of-service/privacy-policy/cookie-policy/refund-policy) so an
  * external link (e.g. Clerk's legal-consent setting, which wants separate
  * ToS and Privacy URLs) can deep-link straight to the relevant section. */

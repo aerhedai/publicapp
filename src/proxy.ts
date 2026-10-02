@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/shared/(.*)", // public shareable output pages - read-only, no auth required
   "/terms", // has to be readable before an account exists - also what Clerk's legal-consent setting needs a public URL for
+  "/support", // same reasoning - readable without an account, same as the landing page
   "/api/webhooks/(.*)", // verified via signature inside the handler, not via session
   "/api/cron/(.*)", // verified via CRON_SECRET inside the handler, not via session
   "/monitoring(.*)", // Sentry's tunnelRoute (next.config.ts) - error reports from unauthenticated pages too

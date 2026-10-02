@@ -33,7 +33,7 @@ const MENU_ITEMS = [
     ),
   },
   {
-    href: "/console/account/support",
+    href: "/support",
     label: "Support",
     icon: (
       <path

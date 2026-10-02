@@ -5,7 +5,7 @@
 // reference page uses. Clicking anywhere opens the sign-up modal.
 import { AuthTrigger } from "@/components/auth/auth-trigger";
 
-export function GeneratorPreview() {
+export function GeneratorPreview({ typedText }: { typedText?: string }) {
   return (
     <AuthTrigger
       mode="sign-up"
@@ -20,9 +20,18 @@ export function GeneratorPreview() {
         </span>
       </div>
 
-      <p className="text-sm text-white/70">
-        A woman stares out a rain-streaked window, city lights blurred behind
-        her, camera pushing in slowly&hellip;
+      <p className="min-h-[2.5rem] text-sm text-white/70">
+        {typedText !== undefined ? (
+          <>
+            {typedText}
+            <span className="animate-pulse">|</span>
+          </>
+        ) : (
+          <>
+            A woman stares out a rain-streaked window, city lights blurred
+            behind her, camera pushing in slowly&hellip;
+          </>
+        )}
       </p>
 
       <div className="mt-4 flex items-center gap-2">

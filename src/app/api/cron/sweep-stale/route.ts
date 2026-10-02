@@ -61,7 +61,32 @@ export async function GET(req: Request) {
     }
 
     if (job.settleLedgerId) {
-      // Already resolved by a race with the webhook between our SELECT and now.
+      // Usually just a race with the webhook between our SELECT and now -
+      // but can also mean a real half-finished write: apply-job-result.ts's
+      // success path used to be two separate update() calls, so a platform
+      // kill between them could leave settleLedgerId set (credits already
+      // confirmed) with status/outputStorageKey never written - that write
+      // is now a single atomic update (see its own comment), but an
+      // existing row stuck from before that fix needs an active recovery
+      // here, not just a skip. If we still have a runpodJobId, try to
+      // actually finish it by re-fetching the real result and letting
+      // applyRunpodResult write the missing fields (re-setting the same
+      // settleLedgerId is a harmless no-op, not a double charge - no new
+      // ledger row gets inserted either way).
+      if (job.runpodJobId && job.type !== "stitch") {
+        try {
+          const status = await getJobStatus(job.type, job.runpodJobId);
+          if (status.status === "COMPLETED" || status.status === "FAILED") {
+            await applyRunpodResult(job, status);
+            results.push({ jobId: job.id, outcome: `recovered_half_settled_${status.status.toLowerCase()}` });
+            console.error(`[cron/sweep-stale] job ${job.id} was settled but never finished writing its result - recovered via RunPod, status=${status.status}`);
+            continue;
+          }
+        } catch {
+          // Fall through to the plain skip below - still better than
+          // throwing and losing the rest of this batch.
+        }
+      }
       results.push({ jobId: job.id, outcome: "already_settled" });
       continue;
     }

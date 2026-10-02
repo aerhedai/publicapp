@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { generationJobs, characterReferences, projectClips } from "@/db/schema";
-import { CREDIT_COST_BY_TYPE, confirmCredits, releaseCredits } from "@/lib/credits";
+import { CREDIT_COST_BY_TYPE, releaseCredits } from "@/lib/credits";
 import { releaseGlobalSlot } from "@/lib/concurrency";
 import { advanceProject, finalizeStitchJob } from "@/lib/projects";
 import type { RunpodJobStatus } from "@/lib/runpod";
@@ -70,10 +70,21 @@ export async function applyRunpodResult(
   // reserveLedgerId is guaranteed non-null here - a job can only reach
   // "warming"/"processing" (and therefore get a RunPod webhook at all) after
   // going through reserveCredits in the dispatch route.
-  await confirmCredits(job.id, job.reserveLedgerId!);
+  //
+  // settleLedgerId and status/outputStorageKey used to be two SEPARATE
+  // sequential update() calls - if anything interrupted execution between
+  // them (a platform-level kill, same class of bug as dispatchJob's
+  // previously-missing fetch timeout), a row could end up with
+  // settleLedgerId set (so the idempotency guard above correctly refuses to
+  // re-process it) but status still stuck non-terminal forever, with no
+  // recovery path at all - confirmed live: a real job stuck exactly like
+  // this, found via sweep-stale reporting "already_settled" on a row the
+  // user could still see as "generating". One update now, so the two can
+  // never be split by an interruption.
   await db
     .update(generationJobs)
     .set({
+      settleLedgerId: job.reserveLedgerId!,
       status: "done",
       outputStorageKey: output.outputStorageKey,
       runpodExecMs: payload.executionTime ?? output.comfyExecMs ?? null,

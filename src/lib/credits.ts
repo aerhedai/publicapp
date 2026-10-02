@@ -152,17 +152,6 @@ export async function reserveCredits(params: {
 }
 
 /**
- * Marks a job's credit outcome as finalized on success - the reserve stands
- * as the charge, no new ledger row needed. `settleLedgerId` being non-null
- * is the idempotency guard the webhook handler and stale-job sweep both
- * check before processing a job's completion, so a duplicate delivery is a
- * no-op instead of re-applying a result.
- */
-export async function confirmCredits(jobId: string, reserveLedgerId: string): Promise<void> {
-  await db.update(generationJobs).set({ settleLedgerId: reserveLedgerId }).where(eq(generationJobs.id, jobId));
-}
-
-/**
  * Refunds a reserved job on failure/timeout - an explicit compensating
  * positive-delta row (never mutates or deletes the original reserve row),
  * so "reserved N, refunded N" is always auditable in the ledger's own

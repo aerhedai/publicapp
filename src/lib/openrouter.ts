@@ -74,6 +74,12 @@ export async function callOpenRouterJson(systemPrompt: string, messages: ChatTur
         model: getModel(),
         messages: [{ role: "system", content: systemPrompt }, ...messages],
       }),
+      // Its sibling OpenRouter call (output-moderation.ts) already has a
+      // timeout; this one - on the hot path of every chat turn - didn't.
+      // Same AbortSignal.timeout pattern used for every other outbound
+      // call fixed this session (runpod.ts, r2.ts) - a hung request should
+      // fail cleanly and catchably, not hang the request indefinitely.
+      signal: AbortSignal.timeout(20_000),
     });
   } catch (err) {
     throw new LLMError(`OpenRouter request failed: ${(err as Error).message}`);

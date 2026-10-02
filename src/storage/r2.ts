@@ -5,6 +5,7 @@ import {
   DeleteObjectsCommand,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -33,6 +34,13 @@ function getClient(): S3Client {
       accessKeyId: process.env.R2_ACCESS_KEY_ID!,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
     },
+    // The AWS SDK v3 has no default request timeout at all unless given an
+    // explicit handler - same missing-timeout class of bug as dispatchJob's
+    // RunPod call (see runpod.ts). This matters more here than it might
+    // look: stitch.ts's R2 calls run synchronously inside dispatchOneJob,
+    // meaning a hang here occurs while the global dispatch slot and the
+    // user's one-in-flight slot are both still held.
+    requestHandler: new NodeHttpHandler({ requestTimeout: 20_000, connectionTimeout: 10_000 }),
   });
   return cachedClient;
 }

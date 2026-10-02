@@ -6,7 +6,6 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/shared/(.*)", // public shareable output pages - read-only, no auth required
   "/terms", // has to be readable before an account exists - also what Clerk's legal-consent setting needs a public URL for
   "/support", // same reasoning - readable without an account, same as the landing page
   "/api/webhooks/(.*)", // verified via signature inside the handler, not via session

@@ -238,10 +238,14 @@ export interface RunpodJobStatus {
 }
 
 // Only used by the stale-job sweep, never the happy path (that's the
-// webhook's job).
+// webhook's job). Same AbortSignal.timeout as dispatchJob's /run call, for
+// the same reason - this is the one call the sweep itself depends on to
+// recover a stuck job, so a hang here would break the exact recovery path
+// this function exists for, not just this one call.
 export async function getJobStatus(type: JobType, runpodJobId: string): Promise<RunpodJobStatus> {
   const res = await fetch(`${getBaseUrl(type)}/status/${runpodJobId}`, {
     headers: { Authorization: `Bearer ${getApiKey()}` },
+    signal: AbortSignal.timeout(20_000),
   });
   if (res.status === 404) {
     // RunPod purges job status after a retention window (confirmed live -
@@ -260,6 +264,7 @@ export async function cancelJob(type: JobType, runpodJobId: string): Promise<voi
   const res = await fetch(`${getBaseUrl(type)}/cancel/${runpodJobId}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${getApiKey()}` },
+    signal: AbortSignal.timeout(20_000),
   });
   // A job that's already finished (or never existed) 404s here - not a
   // failure worth surfacing, the sweep is calling this defensively.

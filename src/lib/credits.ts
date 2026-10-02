@@ -121,11 +121,18 @@ export type ReserveResult = { ok: true; reserveLedgerId: string } | { ok: false;
 
 /**
  * Checks balance, and if sufficient, inserts a negative-delta ledger row and
- * links it to the job. Call this before dispatching to RunPod - never call
- * dispatchJob if this returns ok:false. Does NOT wrap the check+insert in a
- * transaction (see the module-level note on why) - relies on the caller
- * having already ensured only one of this user's jobs can reach this point
- * at a time.
+ * links it to the job - as ONE writable-CTE statement (Postgres supports a
+ * data-modifying CTE natively), not two sequential round trips. Without
+ * this, a crash between the insert and the update would leave the user
+ * genuinely charged (the ledger row exists) but the job's
+ * `reserveLedgerId` never recorded - which apply-job-result.ts's own atomic
+ * write would later persist as a literal `null` into `settleLedgerId`,
+ * permanently defeating its idempotency guard for that job. Confirmed as a
+ * real failure class this session (the same gap, just on the success-path
+ * write, got a user's job stuck "settled" with no way to ever finish it).
+ * Does NOT wrap the balance check itself in this atomicity - relies on the
+ * caller having already ensured only one of this user's jobs can reach
+ * this point at a time (see the module-level note on why that's safe here).
  */
 export async function reserveCredits(params: {
   jobId: string;
@@ -138,24 +145,36 @@ export async function reserveCredits(params: {
     return { ok: false, reason: "insufficient_credits" };
   }
 
-  const [ledgerRow] = await db
-    .insert(creditLedger)
-    .values({ userId: params.userId, delta: -cost, reason: "generation_reserve" })
-    .returning({ id: creditLedger.id });
+  const result = await db.execute<{ reserve_ledger_id: string }>(sql`
+    WITH new_ledger AS (
+      INSERT INTO credit_ledger (user_id, delta, reason)
+      VALUES (${params.userId}, ${-cost}, 'generation_reserve')
+      RETURNING id
+    )
+    UPDATE generation_jobs
+    SET estimated_credits = ${cost}, reserve_ledger_id = (SELECT id FROM new_ledger)
+    WHERE id = ${params.jobId}
+    RETURNING reserve_ledger_id
+  `);
+  const reserveLedgerId = result.rows[0]?.reserve_ledger_id;
+  if (!reserveLedgerId) {
+    throw new Error(`reserveCredits: no row returned for job ${params.jobId} - does it exist?`);
+  }
 
-  await db
-    .update(generationJobs)
-    .set({ estimatedCredits: cost, reserveLedgerId: ledgerRow.id })
-    .where(eq(generationJobs.id, params.jobId));
-
-  return { ok: true, reserveLedgerId: ledgerRow.id };
+  return { ok: true, reserveLedgerId };
 }
 
 /**
  * Refunds a reserved job on failure/timeout - an explicit compensating
  * positive-delta row (never mutates or deletes the original reserve row),
  * so "reserved N, refunded N" is always auditable in the ledger's own
- * history.
+ * history. Same single-writable-CTE atomicity as reserveCredits above, for
+ * the same reason - this function is called from 5+ places (dispatch
+ * failure, output-moderation rejection, the stale-job sweep's own recovery
+ * paths), so a crash between a plain insert+update here would leave a user
+ * correctly refunded but the job permanently stuck non-terminal - the exact
+ * user-visible symptom this session's whole incident started from, just
+ * triggered from the refund side instead of the confirm side.
  */
 export async function releaseCredits(params: {
   jobId: string;
@@ -163,15 +182,16 @@ export async function releaseCredits(params: {
   estimatedCredits: number;
   error: string;
 }): Promise<void> {
-  const [refundRow] = await db
-    .insert(creditLedger)
-    .values({ userId: params.userId, delta: params.estimatedCredits, reason: "generation_refund" })
-    .returning({ id: creditLedger.id });
-
-  await db
-    .update(generationJobs)
-    .set({ status: "failed", error: params.error, settleLedgerId: refundRow.id })
-    .where(eq(generationJobs.id, params.jobId));
+  await db.execute(sql`
+    WITH new_ledger AS (
+      INSERT INTO credit_ledger (user_id, delta, reason)
+      VALUES (${params.userId}, ${params.estimatedCredits}, 'generation_refund')
+      RETURNING id
+    )
+    UPDATE generation_jobs
+    SET status = 'failed', error = ${params.error}, settle_ledger_id = (SELECT id FROM new_ledger)
+    WHERE id = ${params.jobId}
+  `);
 }
 
 /**

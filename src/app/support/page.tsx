@@ -28,7 +28,7 @@ const FAQS = [
   },
   {
     q: "How long does a generation take?",
-    a: "Typically under a minute once a GPU worker is warm. The very first request in a while can take up to a couple of minutes while a worker cold-starts.",
+    a: "Usually under a minute. Occasionally the first generation after a quiet period takes a little longer while everything spins back up.",
   },
 ];
 

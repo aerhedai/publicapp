@@ -1,4 +1,7 @@
+"use client";
+
 import { AuthTrigger } from "@/components/auth/auth-trigger";
+import { useRevealOnScroll } from "@/lib/use-reveal-on-scroll";
 
 const CAPABILITIES = [
   {
@@ -46,7 +49,7 @@ const CAPABILITIES = [
   {
     title: "Fast Turnaround",
     description:
-      "Runs on dedicated GPU workers that scale to zero - no queue when nobody's generating.",
+      "Most generations are ready in under a minute - no waiting in a shared queue behind other users.",
     icon: (
       <path
         d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"
@@ -59,47 +62,61 @@ const CAPABILITIES = [
   },
 ];
 
+/** Flips up into place (rotateX, like a card tipping toward you) rather
+ * than sliding or fading - a different motion language from
+ * pricing.tsx's rise and faq.tsx's plain fade, so each section reads as
+ * its own moment rather than the same reveal reused four times. Needs a
+ * `perspective` on the grid container below for the 3D rotation to read
+ * as depth instead of just squashing vertically. */
+function CapabilityCard({ c, index }: { c: (typeof CAPABILITIES)[number]; index: number }) {
+  const { ref, visible } = useRevealOnScroll<HTMLDivElement>();
+
+  return (
+    <div
+      ref={ref}
+      className="flex flex-col rounded-3xl border border-border bg-card p-6"
+      style={{
+        transformStyle: "preserve-3d",
+        transformOrigin: "bottom",
+        transition: "opacity 0.55s ease-out, transform 0.55s ease-out",
+        transitionDelay: `${index * 100}ms`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "rotateX(0deg)" : "rotateX(-55deg)",
+      }}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5">
+        <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 text-foreground">
+          {c.icon}
+        </svg>
+      </div>
+      <h3 className="mt-4 font-display text-base font-medium">{c.title}</h3>
+      <p className="mt-2 flex-1 text-sm text-muted-foreground">{c.description}</p>
+      <AuthTrigger
+        mode="sign-up"
+        className="mt-4 flex items-center gap-1 text-sm font-medium text-foreground transition-opacity hover:opacity-70"
+      >
+        Try it
+        <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+          <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </AuthTrigger>
+    </div>
+  );
+}
+
 export function Capabilities() {
   return (
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="text-center">
           <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Built for real production, not just demos
+            Everything you need to go from idea to finished shot
           </h2>
         </div>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CAPABILITIES.map((c) => (
-            <div
-              key={c.title}
-              className="flex flex-col rounded-3xl border border-border bg-card p-6"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5">
-                <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 text-foreground">
-                  {c.icon}
-                </svg>
-              </div>
-              <h3 className="mt-4 font-display text-base font-medium">{c.title}</h3>
-              <p className="mt-2 flex-1 text-sm text-muted-foreground">
-                {c.description}
-              </p>
-              <AuthTrigger
-                mode="sign-up"
-                className="mt-4 flex items-center gap-1 text-sm font-medium text-foreground transition-opacity hover:opacity-70"
-              >
-                Try it
-                <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-                  <path
-                    d="M4 10h12M11 5l5 5-5 5"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </AuthTrigger>
-            </div>
+        <div className="mt-14 grid gap-4 [perspective:1200px] sm:grid-cols-2 lg:grid-cols-4">
+          {CAPABILITIES.map((c, i) => (
+            <CapabilityCard key={c.title} c={c} index={i} />
           ))}
         </div>
       </div>

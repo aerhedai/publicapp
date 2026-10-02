@@ -185,6 +185,17 @@ export async function dispatchJob(params: {
 
   let res: Response;
   try {
+    // A hung /run request (no response either way) previously had no
+    // timeout at all - it would sit until Vercel's own platform-level
+    // function kill, which bypasses this try/catch entirely: the job stays
+    // claimed ("warming"), its global dispatch slot never released, and -
+    // worse - it never gets a runpodJobId persisted, which is exactly what
+    // the stale-job sweep requires to ever recover a row (it explicitly
+    // skips rows with none, assuming that "can't happen"). Confirmed live:
+    // RunPod's own endpoint-health showed inQueue:0/inProgress:0 for a job
+    // stuck "warming" in our own DB - the request never reached RunPod at
+    // all, it just hung. 20s is generous for what should be a near-instant
+    // enqueue-and-return call, well inside Vercel's function budget.
     res = await fetch(`${getBaseUrl(params.type)}/run`, {
       method: "POST",
       headers: {
@@ -192,6 +203,7 @@ export async function dispatchJob(params: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ ...payload, webhook: buildWebhookUrl(params.jobId) }),
+      signal: AbortSignal.timeout(20_000),
     });
   } catch (err) {
     throw new RunpodDispatchError(

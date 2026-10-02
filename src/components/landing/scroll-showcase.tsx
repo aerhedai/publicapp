@@ -15,7 +15,12 @@ const IMAGES: {
   src: string;
   alt: string;
   aspect: string;
-  widthVw: number;
+  // clamp(min, preferred-vw, max) - a bare `${vw}vw` with only an upper cap
+  // has no floor, so on a narrow phone (where vw is a small absolute
+  // number) the cards shrank to ~55-85px, unreadably small. Confirmed live
+  // (user on a phone) - this wasn't a "that's just mobile" expectation, it
+  // was a real missing-minimum-size bug.
+  width: string;
   at: [number, number];
   to: { x: number; y: number; rotate: number };
 }[] = [
@@ -23,49 +28,49 @@ const IMAGES: {
     src: "/showcase/portrait-sailor.png",
     alt: "Cinematic portrait generated from a text prompt",
     aspect: "7/9",
-    widthVw: 15,
+    width: "clamp(150px, 15vw, 220px)",
     at: [0.15, 0.45],
-    to: { x: -30, y: -14, rotate: -6 },
+    to: { x: -20, y: -11, rotate: -6 },
   },
   {
     src: "/showcase/cyberpunk-street.png",
     alt: "Futuristic city street generated from a text prompt",
     aspect: "7/4",
-    widthVw: 22,
+    width: "clamp(190px, 22vw, 320px)",
     at: [0.2, 0.5],
-    to: { x: 26, y: -20, rotate: 5 },
+    to: { x: 18, y: -14, rotate: 5 },
   },
   {
     src: "/showcase/cozy-kitchen.png",
     alt: "Cozy kitchen scene generated from a text prompt",
     aspect: "1/1",
-    widthVw: 16,
+    width: "clamp(150px, 16vw, 230px)",
     at: [0.25, 0.55],
-    to: { x: -32, y: 12, rotate: 4 },
+    to: { x: -22, y: 8, rotate: 4 },
   },
   {
     src: "/showcase/astronaut-space.png",
     alt: "Astronaut in space generated from a text prompt",
     aspect: "1/1",
-    widthVw: 16,
+    width: "clamp(150px, 16vw, 230px)",
     at: [0.3, 0.6],
-    to: { x: 31, y: 10, rotate: -5 },
+    to: { x: 21, y: 7, rotate: -5 },
   },
   {
     src: "/showcase/bioluminescent-forest.png",
     alt: "Glowing fantasy forest generated from a text prompt",
     aspect: "7/4",
-    widthVw: 20,
+    width: "clamp(170px, 20vw, 280px)",
     at: [0.35, 0.65],
-    to: { x: -6, y: -28, rotate: -3 },
+    to: { x: -4, y: -20, rotate: -3 },
   },
   {
     src: "/showcase/perfume-product.png",
     alt: "Product photography generated from a text prompt",
     aspect: "7/9",
-    widthVw: 14,
+    width: "clamp(140px, 14vw, 200px)",
     at: [0.4, 0.7],
-    to: { x: 10, y: 24, rotate: 6 },
+    to: { x: 7, y: 17, rotate: 6 },
   },
 ];
 
@@ -112,16 +117,19 @@ export function ScrollShowcase() {
           return (
             <div
               key={img.src}
-              className="pointer-events-none absolute overflow-hidden rounded-2xl shadow-2xl"
+              className="pointer-events-none absolute left-1/2 top-1/2 overflow-hidden rounded-2xl shadow-2xl"
               style={{
-                width: `${img.widthVw}vw`,
-                maxWidth: "280px",
+                width: img.width,
                 aspectRatio: img.aspect,
                 opacity: fadeIn,
-                transform: `translate(${x}vw, ${y}vh) rotate(${rotate}deg) scale(${scale})`,
+                // translate(-50%, -50%) is the centering anchor (left-1/2
+                // top-1/2 alone only pins the element's top-left corner to
+                // the container's center) - applied first, then the burst
+                // motion on top of that true-centered starting point.
+                transform: `translate(-50%, -50%) translate(${x}vw, ${y}vh) rotate(${rotate}deg) scale(${scale})`,
               }}
             >
-              <Image src={img.src} alt={img.alt} fill sizes="280px" className="object-cover" />
+              <Image src={img.src} alt={img.alt} fill sizes="320px" className="object-cover" />
             </div>
           );
         })}

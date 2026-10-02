@@ -45,6 +45,7 @@ export function ImageToolClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
       <CreationsTabs
         jobs={jobs}
         onDeleteJob={removeJob}
+        onJobCreated={addOptimistic}
         notices={notices}
         onDismissNotice={dismissNotice}
         contentBottomPadding

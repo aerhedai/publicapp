@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { JOB_STATUS_CONFIG } from "@/lib/job-status-ui";
 import { useJobOutputUrl } from "@/lib/use-job-output-url";
-import type { JobNotice } from "@/lib/use-live-jobs";
+import type { JobNotice, OnJobCreatedArg } from "@/lib/use-live-jobs";
 
 const FREE_REGEN_WINDOW_MS = 30_000; // mirrors src/lib/credits.ts's FREE_REGENERATION_WINDOW_MS - UI display only, server is the real authority on whether a given click actually lands free
 
@@ -124,7 +124,15 @@ function FreeRegenBadge({ updatedAt }: { updatedAt?: Date }) {
  * Shared by the Tools pages (creations-tabs.tsx), Home, and Explore - one
  * "what a finished job looks like" design, not three.
  */
-export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: string) => void }) {
+export function DoneTile({
+  job,
+  onDelete,
+  onJobCreated,
+}: {
+  job: JobRow;
+  onDelete?: (jobId: string) => void;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
+}) {
   const { url, error } = useJobOutputUrl(job.id);
   const [editing, setEditing] = useState(false);
   const [editPrompt, setEditPrompt] = useState(() => getPrompt(job.input) ?? "");
@@ -176,7 +184,12 @@ export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: st
             >
               <CloseIcon />
             </button>
-            <EditConfirmButton job={job} prompt={editPrompt} onDone={() => setEditing(false)} />
+            <EditConfirmButton
+              job={job}
+              prompt={editPrompt}
+              onDone={() => setEditing(false)}
+              onJobCreated={onJobCreated}
+            />
           </div>
         </div>
       ) : (
@@ -191,7 +204,7 @@ export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: st
             >
               <DownloadIcon />
             </a>
-            {canRegenerate && <RegenerateButton job={job} />}
+            {canRegenerate && <RegenerateButton job={job} onJobCreated={onJobCreated} />}
             {canEdit && (
               <button
                 type="button"
@@ -230,8 +243,24 @@ export function DoneTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: st
  * on whatever button is now underneath it - confirmed live as a real
  * accidental-regenerate report, not a hypothetical. Download/Delete still
  * fire on one click/tap (lower-stakes, pre-existing pattern); this is the
- * one hover action that spends real credits, so it gets the extra step. */
-function RegenerateButton({ job }: { job: JobRow }) {
+ * one hover action that spends real credits, so it gets the extra step.
+ *
+ * Confirming used to just fire the POST and walk away - the new job never
+ * reached useLiveJobs' state at all, so nothing appeared until the next
+ * poll tick, which may have already stopped entirely (polling only runs
+ * while something non-terminal is in the list - regenerating a tile you're
+ * looking at because everything is "done" is exactly the case where it's
+ * stopped). onJobCreated plugs this into the same addOptimistic path the
+ * compose box already uses, so a new "Starting up" tile appears
+ * immediately - as its own new tile, never replacing this one, since
+ * regenerating always creates a brand new row, never mutates the original. */
+function RegenerateButton({
+  job,
+  onJobCreated,
+}: {
+  job: JobRow;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -242,11 +271,15 @@ function RegenerateButton({ job }: { job: JobRow }) {
     try {
       const input = { ...(job.input as Record<string, unknown>) };
       if (job.type === "image") delete input.seed;
-      await fetch("/api/jobs", {
+      const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: job.type, input, regeneratedFromJobId: job.id }),
       });
+      if (res.ok) {
+        const { job: newJob } = await res.json();
+        if (newJob) onJobCreated?.({ id: newJob.id, status: newJob.status, type: newJob.type });
+      }
     } finally {
       setSubmitting(false);
       setConfirming(false);
@@ -300,8 +333,20 @@ function RegenerateButton({ job }: { job: JobRow }) {
  * edited prompt but the original job's own stored seed fixed in place
  * (falling back to whatever seed the original request specified, for a
  * job predating the seed column) - a normal, fully-priced generation, not
- * a free regenerate. */
-function EditConfirmButton({ job, prompt, onDone }: { job: JobRow; prompt: string; onDone: () => void }) {
+ * a free regenerate. Always a new row (never mutates this tile's own job),
+ * surfaced immediately as its own new tile via onJobCreated - same reasoning
+ * as RegenerateButton's own docstring above. */
+function EditConfirmButton({
+  job,
+  prompt,
+  onDone,
+  onJobCreated,
+}: {
+  job: JobRow;
+  prompt: string;
+  onDone: () => void;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
+}) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleConfirm(e: React.MouseEvent) {
@@ -311,11 +356,15 @@ function EditConfirmButton({ job, prompt, onDone }: { job: JobRow; prompt: strin
     try {
       const original = job.input as Record<string, unknown>;
       const input = { ...original, prompt: prompt.trim(), seed: job.seed ?? original.seed };
-      await fetch("/api/jobs", {
+      const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "image", input }),
       });
+      if (res.ok) {
+        const { job: newJob } = await res.json();
+        if (newJob) onJobCreated?.({ id: newJob.id, status: newJob.status, type: newJob.type });
+      }
       onDone();
     } finally {
       setSubmitting(false);
@@ -371,11 +420,19 @@ export function ActiveTile({ job }: { job: JobRow }) {
  * expected to already be filtered out upstream (use-live-jobs.ts) - this
  * renders nothing for one defensively rather than assuming that always
  * held true. */
-export function JobTile({ job, onDelete }: { job: JobRow; onDelete?: (jobId: string) => void }) {
+export function JobTile({
+  job,
+  onDelete,
+  onJobCreated,
+}: {
+  job: JobRow;
+  onDelete?: (jobId: string) => void;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
+}) {
   if (job.status === "failed") return null;
   const isActive = job.status === "queued" || job.status === "warming" || job.status === "processing";
   if (isActive) return <ActiveTile job={job} />;
-  return <DoneTile job={job} onDelete={onDelete} />;
+  return <DoneTile job={job} onDelete={onDelete} onJobCreated={onJobCreated} />;
 }
 
 export function NoticeStack({ notices, onDismiss }: { notices: JobNotice[]; onDismiss: (id: string) => void }) {

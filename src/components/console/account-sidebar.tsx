@@ -32,7 +32,7 @@ const ITEMS = [
     ),
   },
   {
-    href: "/console/account/support",
+    href: "/support",
     label: "Support",
     icon: (
       <path
@@ -45,7 +45,7 @@ const ITEMS = [
     ),
   },
   {
-    href: "/console/account/terms",
+    href: "/terms",
     label: "Terms & Policies",
     icon: (
       <path

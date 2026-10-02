@@ -19,6 +19,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Company",
     links: [
+      { label: "Support", href: "/support" },
       { label: "Log in", authMode: "sign-in" as const },
       { label: "Console", authMode: "sign-in" as const },
     ],

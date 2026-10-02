@@ -82,9 +82,22 @@ export async function GET(req: Request) {
             console.error(`[cron/sweep-stale] job ${job.id} was settled but never finished writing its result - recovered via RunPod, status=${status.status}`);
             continue;
           }
-        } catch {
-          // Fall through to the plain skip below - still better than
-          // throwing and losing the rest of this batch.
+          if (status.status === "NOT_FOUND") {
+            // RunPod only retains a completed job's result for 30 minutes -
+            // past that, there's genuinely nothing left to recover the real
+            // output from. Credits were already taken at reserve time, so
+            // make the user whole with a real refund rather than leaving
+            // them charged for a result that can never be delivered.
+            const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
+            await releaseCredits({ jobId: job.id, userId: job.userId, estimatedCredits: cost, error: "settled_but_unrecoverable_runpod_purged" });
+            await releaseGlobalSlot();
+            results.push({ jobId: job.id, outcome: "recovered_half_settled_unrecoverable_refunded" });
+            console.error(`[cron/sweep-stale] job ${job.id} was settled with no recoverable output (RunPod purged it) - refunded`);
+            continue;
+          }
+          console.error(`[cron/sweep-stale] job ${job.id} settled but still non-terminal, RunPod reports status=${status.status} - leaving as-is`);
+        } catch (err) {
+          console.error(`[cron/sweep-stale] job ${job.id} settled-recovery check threw: ${(err as Error).message}`);
         }
       }
       results.push({ jobId: job.id, outcome: "already_settled" });

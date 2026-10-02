@@ -21,8 +21,12 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Run on everything except static assets and Next internals.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Run on everything except static assets and Next internals. mp4/webm
+    // added alongside the image extensions - the hero's generated video
+    // backgrounds (public/hero/*.mp4) were getting caught by auth.protect()
+    // and 404ing on the public landing page before this, since they weren't
+    // in this exclusion list the way images already were.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm)$).*)",
     // Always run for API routes.
     "/(api|trpc)(.*)",
   ],

@@ -76,3 +76,19 @@ body {
 .animate-popover-in {
   animation: popover-in 120ms ease-out;
 }
+
+/* Slow ambient breathing for the "Most Popular" pricing card's underglow -
+   subtle enough to read as "alive" rather than distracting from reading the
+   card itself. Opacity-only (no scale/blur animation) so it's cheap to run
+   indefinitely. */
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}

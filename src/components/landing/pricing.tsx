@@ -17,62 +17,82 @@ function PricingCard({ tier, index }: { tier: PricingTier; index: number }) {
   return (
     <div
       ref={ref}
-      className={
-        tier.popular
-          ? "relative rounded-3xl p-[1px] [background:linear-gradient(135deg,var(--accent-from),var(--accent-to))]"
-          : ""
-      }
+      className="group relative"
       style={{
         transition: "opacity 0.6s ease-out, transform 0.6s ease-out",
         transitionDelay: `${index * 120}ms`,
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0) scale(1)" : "translateY(28px) scale(0.96)",
+        transform: visible
+          ? `translateY(0) scale(${tier.popular ? 1.03 : 1})`
+          : "translateY(28px) scale(0.96)",
       }}
     >
+      {/* Underglow - a blurred duplicate of the accent gradient sitting
+          behind the card. The popular tier's is brighter and gently
+          pulses (globals.css's glow-pulse); the other two are dim by
+          default and only brighten on hover, so the visual hierarchy
+          still reads "this one's recommended" at a glance, not just via
+          the small badge. */}
       <div
-        className={`flex h-full flex-col rounded-3xl border p-6 ${
-          tier.popular ? "border-transparent bg-card" : "border-border bg-card"
+        aria-hidden
+        className={`pointer-events-none absolute -inset-3 -z-10 rounded-[2rem] blur-2xl transition-opacity duration-300 ${
+          tier.popular ? "animate-glow-pulse opacity-70" : "opacity-0 group-hover:opacity-40"
         }`}
+        style={{ background: "linear-gradient(135deg, var(--accent-from), var(--accent-to))" }}
+      />
+
+      <div
+        className={
+          tier.popular
+            ? "relative rounded-3xl p-[1px] [background:linear-gradient(135deg,var(--accent-from),var(--accent-to))]"
+            : "relative rounded-3xl border border-border transition-colors duration-300 group-hover:border-white/20"
+        }
       >
-        {tier.popular && (
-          <span className="mb-4 inline-block w-fit rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-1 text-xs font-medium text-white">
-            Most Popular
-          </span>
-        )}
-        <h3 className="font-display text-lg font-medium">{tier.name}</h3>
-        <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-3xl font-semibold">${(tier.priceCents / 100).toFixed(0)}</span>
-          <span className="text-sm text-muted-foreground">/mo</span>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {tier.credits.toLocaleString()} credits - or buy as a one-time top-up
-        </p>
-
-        <ul className="mt-6 flex-1 space-y-3 text-sm">
-          {tier.features.map((f) => (
-            <li key={f} className="flex items-start gap-2">
-              <svg viewBox="0 0 20 20" fill="none" className="mt-0.5 h-5 w-5 shrink-0 text-foreground">
-                <path
-                  d="M16 6L8.5 14 4 9.5"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="text-muted-foreground">{f}</span>
-            </li>
-          ))}
-        </ul>
-
-        <AuthTrigger
-          mode="sign-up"
-          className={`mt-6 w-full rounded-full px-5 py-2.5 text-center text-sm font-medium transition-opacity hover:opacity-90 ${
-            tier.popular ? "bg-foreground text-background" : "border border-border text-foreground"
+        <div
+          className={`flex h-full flex-col rounded-3xl p-6 ${
+            tier.popular ? "border border-transparent bg-card" : "bg-card"
           }`}
         >
-          Get Started
-        </AuthTrigger>
+          {tier.popular && (
+            <span className="mb-4 inline-block w-fit rounded-full bg-[linear-gradient(135deg,var(--accent-from),var(--accent-to))] px-3 py-1 text-xs font-medium text-white">
+              Most Popular
+            </span>
+          )}
+          <h3 className="font-display text-lg font-medium">{tier.name}</h3>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-3xl font-semibold">${(tier.priceCents / 100).toFixed(0)}</span>
+            <span className="text-sm text-muted-foreground">/mo</span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {tier.credits.toLocaleString()} credits - or buy as a one-time top-up
+          </p>
+
+          <ul className="mt-6 flex-1 space-y-3 text-sm">
+            {tier.features.map((f) => (
+              <li key={f} className="flex items-start gap-2">
+                <svg viewBox="0 0 20 20" fill="none" className="mt-0.5 h-5 w-5 shrink-0 text-foreground">
+                  <path
+                    d="M16 6L8.5 14 4 9.5"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-muted-foreground">{f}</span>
+              </li>
+            ))}
+          </ul>
+
+          <AuthTrigger
+            mode="sign-up"
+            className={`mt-6 w-full rounded-full px-5 py-2.5 text-center text-sm font-medium transition-opacity hover:opacity-90 ${
+              tier.popular ? "bg-foreground text-background" : "border border-border text-foreground"
+            }`}
+          >
+            Get Started
+          </AuthTrigger>
+        </div>
       </div>
     </div>
   );

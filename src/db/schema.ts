@@ -165,7 +165,15 @@ export const generationJobs = pgTable(
     // Null for video/stitch, and for any image job predating this column.
     // Lets "Edit" (job-tile.tsx) re-run the exact same seed with a changed
     // prompt instead of only ever getting a fresh random one.
-    seed: integer("seed"),
+    // bigint, not integer - RunPod can return a seed up to the full
+    // unsigned 32-bit range (~4.29 billion), which overflows Postgres's
+    // signed 32-bit `integer` (max ~2.15 billion). Confirmed live: a real,
+    // successfully-completed job's webhook failed on every retry with
+    // "value ... is out of range for type integer" - the whole completion
+    // write is one atomic statement (see apply-job-result.ts), so the
+    // overflow silently rolled back the entire update, leaving a genuinely
+    // finished job stuck non-terminal forever.
+    seed: bigint("seed", { mode: "number" }),
 
     // Set when this job is a free-regeneration attempt - always points at
     // the ROOT original (never chains - regenerating a regenerated result

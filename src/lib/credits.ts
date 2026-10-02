@@ -66,7 +66,7 @@ export function computeJobCost(type: (typeof jobType.enumValues)[number], input:
   return CREDIT_COST_BY_TYPE[type];
 }
 
-export const FREE_REGENERATIONS_PER_ORIGINAL = 2;
+export const FREE_REGENERATIONS_PER_ORIGINAL = 1;
 export const FREE_REGENERATION_WINDOW_MS = 30_000;
 
 /**

@@ -179,7 +179,7 @@ export const generationJobs = pgTable(
     // the ROOT original (never chains - regenerating a regenerated result
     // still points here, collapsed to the same root via
     // `original.regeneratedFromJobId ?? original.id` in POST /api/jobs), so
-    // the "2 free regens, within 30s of the original's completion" cap in
+    // the "1 free regen, within 30s of the original's completion" cap in
     // credits.ts's computeJobCostWithFreeRegen can be checked with one
     // query against one shared root rather than walking a chain. Null for
     // every normal, non-regenerated job.

@@ -44,7 +44,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 sm:grid-cols-4">
           <div>
-            <span className="font-display text-lg font-semibold tracking-tight">
+            <span className="text-gradient-accent font-display text-xl font-bold tracking-tighter">
               Curealo
             </span>
           </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ComingSoon } from "./reference-panels";
 import { JobTile, NoticeStack, type JobRow } from "./job-tile";
 import { groupJobsByDay } from "@/lib/job-grouping";
-import type { JobNotice } from "@/lib/use-live-jobs";
+import type { JobNotice, OnJobCreatedArg } from "@/lib/use-live-jobs";
 
 // Shared responsive column progression for every day-grouped tile grid in
 // the app (this file, Home, Explore) - defined once so they can't drift.
@@ -13,7 +13,15 @@ export const TILE_GRID_CLASSES = "grid w-full grid-cols-2 gap-3 sm:grid-cols-3 m
 /** Renders `jobs` (already sorted createdAt desc) as day-divided tile grids -
  * each day gets its own heading + its own grid container, so a new day
  * always starts a fresh row rather than continuing the previous day's. */
-export function DayGroupedTiles({ jobs, onDeleteJob }: { jobs: JobRow[]; onDeleteJob?: (jobId: string) => void }) {
+export function DayGroupedTiles({
+  jobs,
+  onDeleteJob,
+  onJobCreated,
+}: {
+  jobs: JobRow[];
+  onDeleteJob?: (jobId: string) => void;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
+}) {
   const groups = groupJobsByDay(jobs);
   return (
     <div className="flex w-full flex-col gap-6">
@@ -22,7 +30,7 @@ export function DayGroupedTiles({ jobs, onDeleteJob }: { jobs: JobRow[]; onDelet
           <h3 className="text-sm font-medium text-muted-foreground">{group.label}</h3>
           <div className={TILE_GRID_CLASSES}>
             {group.jobs.map((job) => (
-              <JobTile key={job.id} job={job} onDelete={onDeleteJob} />
+              <JobTile key={job.id} job={job} onDelete={onDeleteJob} onJobCreated={onJobCreated} />
             ))}
           </div>
         </div>
@@ -42,6 +50,7 @@ export function CreationsTabs({
   greeting,
   contentBottomPadding,
   onDeleteJob,
+  onJobCreated,
   notices = [],
   onDismissNotice,
 }: {
@@ -53,6 +62,7 @@ export function CreationsTabs({
   // etc.) - without it the last row of tiles would sit hidden underneath it.
   contentBottomPadding?: boolean;
   onDeleteJob?: (jobId: string) => void;
+  onJobCreated?: (job: OnJobCreatedArg) => void;
   notices?: JobNotice[];
   onDismissNotice?: (id: string) => void;
 }) {
@@ -118,7 +128,7 @@ export function CreationsTabs({
               </p>
             </div>
           ) : (
-            <DayGroupedTiles jobs={jobs} onDeleteJob={onDeleteJob} />
+            <DayGroupedTiles jobs={jobs} onDeleteJob={onDeleteJob} onJobCreated={onJobCreated} />
           )
         ) : (
           <ComingSoon label={extraTabs.find((t) => t.key === tab)?.label ?? tab} />

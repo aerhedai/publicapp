@@ -5,7 +5,7 @@ import { NoticeStack } from "./job-tile";
 import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
 
 export function ExploreClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
-  const { jobs, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs);
+  const { jobs, addOptimistic, removeJob, notices, dismissNotice } = useLiveJobs(initialJobs);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 sm:px-8 py-10">
@@ -18,7 +18,7 @@ export function ExploreClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground">No jobs yet. This is where the video-generation flow will plug in.</p>
       ) : (
-        <DayGroupedTiles jobs={jobs} onDeleteJob={removeJob} />
+        <DayGroupedTiles jobs={jobs} onDeleteJob={removeJob} onJobCreated={addOptimistic} />
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { CreationBox } from "./creation-box";
 import { CapabilityCards } from "./capability-cards";
 import { JobTile, NoticeStack } from "./job-tile";
 import { groupJobsByDay } from "@/lib/job-grouping";
-import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
+import { useLiveJobs, type LiveJobRow, type OnJobCreatedArg } from "@/lib/use-live-jobs";
 
 /**
  * Home's own small feed column - deliberately not creations-tabs.tsx's
@@ -14,7 +14,15 @@ import { useLiveJobs, type LiveJobRow } from "@/lib/use-live-jobs";
  * row), but the same day-grouping util and the same JobTile component - one
  * "what a finished job looks like" design everywhere, just a narrower grid.
  */
-function RecentFeed({ jobs, onDeleteJob }: { jobs: LiveJobRow[]; onDeleteJob: (jobId: string) => void }) {
+function RecentFeed({
+  jobs,
+  onDeleteJob,
+  onJobCreated,
+}: {
+  jobs: LiveJobRow[];
+  onDeleteJob: (jobId: string) => void;
+  onJobCreated: (job: OnJobCreatedArg) => void;
+}) {
   const groups = groupJobsByDay(jobs);
   return (
     <div className="flex w-full flex-col gap-5">
@@ -23,7 +31,7 @@ function RecentFeed({ jobs, onDeleteJob }: { jobs: LiveJobRow[]; onDeleteJob: (j
           <h3 className="text-xs font-medium text-muted-foreground">{group.label}</h3>
           <div className="grid grid-cols-2 gap-2">
             {group.jobs.map((job) => (
-              <JobTile key={job.id} job={job} onDelete={onDeleteJob} />
+              <JobTile key={job.id} job={job} onDelete={onDeleteJob} onJobCreated={onJobCreated} />
             ))}
           </div>
         </div>
@@ -47,7 +55,7 @@ export function HomeClient({ jobs: initialJobs }: { jobs: LiveJobRow[] }) {
           {jobs.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing yet - your generations will show up here.</p>
           ) : (
-            <RecentFeed jobs={jobs} onDeleteJob={removeJob} />
+            <RecentFeed jobs={jobs} onDeleteJob={removeJob} onJobCreated={addOptimistic} />
           )}
         </div>
 

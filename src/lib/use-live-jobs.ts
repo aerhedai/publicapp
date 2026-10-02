@@ -15,6 +15,13 @@ export interface LiveJobRow {
   regeneratedFromJobId?: string | null;
 }
 
+// Shared shape for "a new job was just created" callbacks - addOptimistic
+// below, and job-tile.tsx's Regenerate/Edit actions which plug into the
+// exact same mechanism so their new job appears immediately instead of
+// waiting on the next poll tick (which may have already stopped if
+// everything currently on screen is terminal).
+export type OnJobCreatedArg = { id: string; status: string; type?: "image" | "video" };
+
 export interface JobNotice {
   id: string;
   message: string;
@@ -98,7 +105,7 @@ export function useLiveJobs(initialJobs: LiveJobRow[], type?: "image" | "video")
     return () => clearInterval(id);
   }, [jobs, type]);
 
-  function addOptimistic(job: { id: string; status: string; type?: "image" | "video" }) {
+  function addOptimistic(job: OnJobCreatedArg) {
     setJobs((prev) => [
       {
         id: job.id,

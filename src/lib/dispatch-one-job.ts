@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { generationJobs } from "@/db/schema";
 import { tryAcquireGlobalSlot, releaseGlobalSlot } from "@/lib/concurrency";
-import { computeJobCost, reserveCredits, releaseCredits, refundReservedCredits } from "@/lib/credits";
+import { computeJobCostWithFreeRegen, reserveCredits, releaseCredits, refundReservedCredits } from "@/lib/credits";
 import { dispatchJob, RunpodDispatchError, type JobInput, type JobType } from "@/lib/runpod";
 import { runStitchJob } from "@/lib/stitch";
 import { applyRunpodResult } from "@/lib/apply-job-result";
@@ -66,7 +66,7 @@ export async function dispatchOneJob(job: typeof generationJobs.$inferSelect): P
       return { jobId: job.id, outcome: "already_claimed" };
     }
 
-    const cost = computeJobCost(claimed.type, claimed.input);
+    const cost = await computeJobCostWithFreeRegen(claimed);
     const reserve = await reserveCredits({ jobId: claimed.id, userId: claimed.userId, cost });
     if (!reserve.ok) {
       await db

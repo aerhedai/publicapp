@@ -77,6 +77,7 @@ export async function applyRunpodResult(
       status: "done",
       outputStorageKey: output.outputStorageKey,
       runpodExecMs: payload.executionTime ?? output.comfyExecMs ?? null,
+      seed: output.seed ?? null,
       updatedAt: new Date(),
     })
     .where(eq(generationJobs.id, job.id));

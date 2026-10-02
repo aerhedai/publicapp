@@ -1,6 +1,6 @@
 import { db } from "@/db/client";
 import { creditLedger, generationJobs, jobType } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { imageCreditCost, videoCreditCost } from "@/lib/pricing-math";
 export { IMAGE_CREDIT_COST_BY_RESOLUTION, VIDEO_BASE_PRICE_USD, VIDEO_PER_SECOND_USD, VIDEO_RESOLUTION_PRICE_MULTIPLIER, PRICE_PER_CREDIT_USD, videoPriceUSD, videoCreditCost, imageCreditCost } from "@/lib/pricing-math";
 
@@ -64,6 +64,49 @@ export function computeJobCost(type: (typeof jobType.enumValues)[number], input:
     return videoCreditCost(resolution, duration);
   }
   return CREDIT_COST_BY_TYPE[type];
+}
+
+export const FREE_REGENERATIONS_PER_ORIGINAL = 2;
+export const FREE_REGENERATION_WINDOW_MS = 30_000;
+
+/**
+ * Wraps computeJobCost with the free-regeneration allowance: a job whose
+ * `regeneratedFromJobId` points at a root job costs nothing if (a) fewer
+ * than FREE_REGENERATIONS_PER_ORIGINAL other jobs already share that same
+ * root, AND (b) the root itself finished within the last
+ * FREE_REGENERATION_WINDOW_MS - "regenerate" is a quick instant-redo right
+ * after seeing a result, not a standing free-retry button discovered a day
+ * later. Both checked fresh here, at reservation time (dispatch-one-job.ts)
+ * - same "compute once, from current state" rule computeJobCost itself
+ * documents - rather than decided once at job-creation time, so a dispatch
+ * delayed behind a global-slot wait is judged by its real elapsed time, not
+ * the moment the user clicked.
+ *
+ * A job with no regeneratedFromJobId (the overwhelming majority - any
+ * normal, non-regenerated generation) always costs the real computed
+ * price; this only ever makes a regeneration *cheaper*, never a normal job
+ * more expensive.
+ */
+export async function computeJobCostWithFreeRegen(
+  job: Pick<typeof generationJobs.$inferSelect, "id" | "type" | "input" | "regeneratedFromJobId">
+): Promise<number> {
+  const realCost = computeJobCost(job.type, job.input);
+  if (!job.regeneratedFromJobId) return realCost;
+
+  const [root] = await db
+    .select({ updatedAt: generationJobs.updatedAt })
+    .from(generationJobs)
+    .where(eq(generationJobs.id, job.regeneratedFromJobId));
+  if (!root || Date.now() - root.updatedAt.getTime() > FREE_REGENERATION_WINDOW_MS) {
+    return realCost;
+  }
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(generationJobs)
+    .where(and(eq(generationJobs.regeneratedFromJobId, job.regeneratedFromJobId), sql`${generationJobs.id} != ${job.id}`));
+
+  return count < FREE_REGENERATIONS_PER_ORIGINAL ? 0 : realCost;
 }
 
 export async function getCreditBalance(userId: string): Promise<number> {

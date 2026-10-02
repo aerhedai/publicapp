@@ -160,6 +160,25 @@ export const generationJobs = pgTable(
       onDelete: "set null",
     }),
 
+    // The actual seed the worker used for this image (from the RunPod
+    // webhook's output.seed - apply-job-result.ts persists it on success).
+    // Null for video/stitch, and for any image job predating this column.
+    // Lets "Edit" (job-tile.tsx) re-run the exact same seed with a changed
+    // prompt instead of only ever getting a fresh random one.
+    seed: integer("seed"),
+
+    // Set when this job is a free-regeneration attempt - always points at
+    // the ROOT original (never chains - regenerating a regenerated result
+    // still points here, collapsed to the same root via
+    // `original.regeneratedFromJobId ?? original.id` in POST /api/jobs), so
+    // the "2 free regens, within 30s of the original's completion" cap in
+    // credits.ts's computeJobCostWithFreeRegen can be checked with one
+    // query against one shared root rather than walking a chain. Null for
+    // every normal, non-regenerated job.
+    regeneratedFromJobId: uuid("regenerated_from_job_id").references((): AnyPgColumn => generationJobs.id, {
+      onDelete: "set null",
+    }),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

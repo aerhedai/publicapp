@@ -36,11 +36,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "createsReferenceLabel must be a non-empty string" }, { status: 400 });
   }
 
+  // Optional: marks this job as a "Regenerate" attempt on a past job
+  // (job-tile.tsx) - the client sends the tile it clicked regenerate on,
+  // which may itself already be a regenerated result. Always collapsed to
+  // the ROOT original here (never chained) so credits.ts's free-regen cap
+  // can be checked against one shared root regardless of how many times a
+  // user has regenerated already.
+  let regeneratedFromJobId: string | null = null;
+  if (body.regeneratedFromJobId !== undefined) {
+    if (typeof body.regeneratedFromJobId !== "string") {
+      return NextResponse.json({ error: "regeneratedFromJobId must be a string" }, { status: 400 });
+    }
+    const [original] = await db.select().from(generationJobs).where(eq(generationJobs.id, body.regeneratedFromJobId));
+    if (!original || original.userId !== userId) {
+      return NextResponse.json({ error: "Original job not found" }, { status: 404 });
+    }
+    regeneratedFromJobId = original.regeneratedFromJobId ?? original.id;
+  }
+
   const result = await createGenerationJob({
     userId,
     type: body.type,
     input: body.input,
     createsReferenceLabel: body.createsReferenceLabel,
+    regeneratedFromJobId,
   });
   if (!result.ok) {
     const status = result.reason === "concurrent_limit" || result.reason === "velocity_limit" ? 429 : 400;

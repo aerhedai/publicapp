@@ -110,9 +110,7 @@ export function ImageCreateForm({ onJobCreated }: { onJobCreated?: (job: { id: s
             // the trip from settings to the stored job input.
             resolution: settings.resolution,
             steps: settings.steps,
-            cfg: settings.cfg,
             seed: settings.seed ?? undefined,
-            sampler: settings.sampler,
           },
         }),
       });

@@ -27,13 +27,19 @@ export async function GET(req: Request) {
   }
 
   const now = Date.now();
+  // Coarse pre-filter using the loosest (SMALLEST) threshold - "loosest"
+  // means "most inclusive," which is the smallest cutoff, not the largest.
+  // This was previously Math.max (45min, video's own ceiling), which made
+  // the pre-filter the most RESTRICTIVE possible: a stuck image job (15min
+  // threshold) sitting at 20 minutes old never even reached the per-type
+  // check below, since the outer query required 45+ minutes just to be
+  // considered a candidate at all - confirmed live, a real stuck image job
+  // was still being skipped by this route entirely. The per-type exact
+  // cutoff below is what actually enforces each type's own budget; this
+  // outer query just needs to not exclude anyone prematurely.
   const oldestAllowedDispatch = new Date(
-    now - Math.max(...Object.values(STALE_THRESHOLD_S_BY_TYPE)) * 1000
+    now - Math.min(...Object.values(STALE_THRESHOLD_S_BY_TYPE)) * 1000
   );
-
-  // Coarse pre-filter using the loosest (largest) threshold - the per-type
-  // exact cutoff is re-checked in the loop below since types have different
-  // budgets.
   const candidates = await db
     .select()
     .from(generationJobs)

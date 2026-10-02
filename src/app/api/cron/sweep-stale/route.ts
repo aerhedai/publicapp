@@ -73,9 +73,22 @@ export async function GET(req: Request) {
     }
 
     if (!job.runpodJobId) {
-      // Shouldn't happen (warming/processing implies a dispatch happened),
-      // but never let a row with nothing to poll block the batch.
-      results.push({ jobId: job.id, outcome: "skipped_no_runpod_job_id" });
+      // Used to be treated as "can't happen" and skipped outright - but it
+      // can: a dispatch whose /run request to RunPod hangs (see runpod.ts's
+      // dispatchJob, which previously had no fetch timeout at all) gets
+      // killed by the platform before the catch block that would normally
+      // release the slot/credits ever runs, leaving a row claimed
+      // ("warming") with no runpodJobId to ever poll - confirmed live via
+      // RunPod's own endpoint-health showing zero jobs in queue/in progress
+      // for a row stuck exactly like this. With nothing to check RunPod's
+      // side for, this is an unrecoverable lost dispatch - refund and fail
+      // it the same way a permanent dispatch error would, same as
+      // dispatch-one-job.ts's own `dispatch_failed_permanent` path.
+      const cost = job.estimatedCredits ?? CREDIT_COST_BY_TYPE[job.type];
+      await releaseCredits({ jobId: job.id, userId: job.userId, estimatedCredits: cost, error: "dispatch_lost_no_runpod_job_id" });
+      await releaseGlobalSlot();
+      results.push({ jobId: job.id, outcome: "dispatch_lost_no_runpod_job_id" });
+      console.error(`[cron/sweep-stale] job ${job.id} had no runpodJobId after ${Math.round(ageS)}s - lost dispatch, refunded`);
       continue;
     }
 
